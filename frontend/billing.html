@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Bhasha — Billing</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <script>window.API_BASE = window.API_BASE || "http://127.0.0.1:8000";</script>
+    <style>
+      :root { --bg:#0f1115; --panel:#16181d; --panel-light:#1c1e25; --border:rgba(255,255,255,.06); --text:#e9ecf1; --muted:#9aa3b2; --brand1:#2563eb; --brand2:#7c3aed; --success:#10b981; --danger:#ef4444; --radius:12px; --shadow:0 8px 30px rgba(0,0,0,0.6); }
+      body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto;color:var(--text);background:var(--bg);display:flex;min-height:100vh}
+      .sidebar{width:240px;background:var(--panel);padding:28px 18px;display:flex;flex-direction:column;gap:16px;border-right:1px solid var(--border)}
+      .sidebar h2{margin:0;font-size:20px}
+      .sidebar nav{display:flex;flex-direction:column;gap:8px}
+      .sidebar button{background:transparent;color:var(--muted);border:0;padding:8px 10px;text-align:left;border-radius:8px;cursor:pointer}
+      .sidebar button.active, .sidebar button:hover{background:linear-gradient(90deg,var(--panel-light),#222); color:var(--text)}
+      .main{flex:1;padding:28px;display:flex;flex-direction:column;gap:20px}
+      header{display:flex;justify-content:space-between;align-items:center}
+      header h1{margin:0;font-size:22px}
+      .panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+      button{padding:8px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:700}
+      button.primary{background:linear-gradient(135deg,var(--brand1),var(--brand2));color:#fff}
+      button.ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}
+      input{padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--panel-light);color:var(--text);width:120px}
+      table{width:100%;border-collapse:collapse;margin-top:12px}
+      th,td{padding:8px;border-bottom:1px solid var(--border);font-size:14px;text-align:left}
+      th{color:var(--muted);font-weight:600}
+      .small{font-size:12px;color:var(--muted)}
+    </style>
+  </head>
+  <body>
+    <aside class="sidebar">
+      <h2>Bhasha</h2>
+      <nav>
+        <button onclick="window.location.href='/static/dashboard.html'">Dashboard</button>
+        <button onclick="window.location.href='/static/dashboard.html#keys'">API Keys</button>
+        <button onclick="window.location.href='/static/dashboard.html#activities'">Activities</button>
+        <button class="active">Billing</button>
+        <button id="btn-logout">Logout</button>
+      </nav>
+      <div class="small note">Manage your balance and usage.</div>
+    </aside>
+
+    <div class="main">
+      <header>
+        <div>
+          <h1>Billing</h1>
+          <div id="user-info" class="small">Loading user...</div>
+        </div>
+        <div class="small">Server: <span id="server-url"></span></div>
+      </header>
+
+      <div class="panel">
+        <h3>Account Balance</h3>
+        <div id="balance" style="font-size:22px;margin-top:6px">--</div>
+        <button id="btn-refresh" class="ghost" style="margin-top:10px">Refresh</button>
+      </div>
+
+      <div class="panel">
+        <h3>Top Up</h3>
+        <div class="small">Add test credits (in cents)</div>
+        <input id="topup-amount" type="number" placeholder="1000" />
+        <button id="btn-topup" class="primary">Top Up</button>
+      </div>
+
+      <div class="panel">
+        <h3>Recent Events</h3>
+        <table>
+          <thead><tr><th>ID</th><th>Amount</th><th>Description</th><th>When</th></tr></thead>
+          <tbody id="events-body">
+            <tr><td colspan="4" class="small">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <script type="module">
+      const API_BASE = (window.API_BASE || "").replace(/\/$/, "");
+      document.getElementById('server-url').textContent = API_BASE || location.origin;
+      const tokenKey = "bhasha_token";
+
+      async function authFetch(path, opts = {}) {
+        opts.headers = opts.headers || {};
+        const token = localStorage.getItem(tokenKey);
+        if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+        const url = path.match(/^https?:\/\//) ? path : (API_BASE + path);
+        const r = await fetch(url, opts);
+        if (r.status === 401) {
+          localStorage.removeItem(tokenKey);
+          alert("Session expired. Please log in again.");
+          window.location.href = "/static/login.html";
+          return null;
+        }
+        if (r.status === 204) return {};
+        try { return await r.json(); } catch(e) { return null; }
+      }
+
+      async function loadBilling() {
+        const res = await authFetch("/billing/overview");
+        if (!res) return;
+        document.getElementById("balance").textContent = (res.balance_cents/100).toFixed(2) + " USD";
+        const events = res.recent_events || [];
+        const body = document.getElementById("events-body");
+        body.innerHTML = "";
+        if (events.length === 0) {
+          body.innerHTML = "<tr><td colspan='4' class='small'>No events yet</td></tr>";
+          return;
+        }
+        for (const ev of events) {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>${ev.id}</td>
+                          <td>${(ev.amount_cents/100).toFixed(2)}</td>
+                          <td>${ev.description}</td>
+                          <td>${new Date(ev.ts).toLocaleString()}</td>`;
+          body.appendChild(tr);
+        }
+      }
+
+      document.getElementById("btn-refresh").addEventListener("click", loadBilling);
+
+      document.getElementById("btn-topup").addEventListener("click", async () => {
+        const amount = parseInt(document.getElementById("topup-amount").value);
+        if (!amount || amount <= 0) { alert("Enter a positive amount"); return; }
+        const res = await authFetch("/billing/topup", {
+          method: "POST",
+          headers: { "Content-Type":"application/json" },
+          body: JSON.stringify({ amount_cents: amount, description: "manual topup" })
+        });
+        if (res) {
+          alert("Topped up successfully. New balance: " + (res.balance_cents/100).toFixed(2));
+          loadBilling();
+        }
+      });
+
+      document.getElementById("btn-logout").addEventListener("click", () => {
+        localStorage.removeItem(tokenKey);
+        window.location.href = "/static/login.html";
+      });
+
+      // Load user info
+      async function loadUser() {
+        const me = await authFetch("/auth/me", { method: "GET" });
+        if (!me) return;
+        document.getElementById("user-info").textContent = `Logged in as ${me.email}`;
+      }
+
+      loadUser();
+      loadBilling();
+    </script>
+  </body>
+</html>

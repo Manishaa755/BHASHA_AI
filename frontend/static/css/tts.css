@@ -1,0 +1,60 @@
+/* TTS page — focused on audio controls */
+@import url('style.css');
+
+body {
+  background: linear-gradient(180deg,#061219,#071027);
+  color: #eef6ff;
+  min-height: 100vh;
+}
+
+header { padding: 12px 18px; background: rgba(2,6,23,0.6); }
+
+.hero { padding: 34px 18px; text-align:center; }
+
+.hero h1 { font-size: 2rem; color: #fff; margin-bottom: 8px; }
+
+.card-container { padding: 20px; display:flex; justify-content:center; }
+
+.card {
+  width: 760px;
+  padding: 18px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.03);
+  text-align: left;
+}
+
+textarea#ttsInput {
+  width: 100%;
+  min-height: 100px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.04);
+  background: rgba(0,0,0,0.45);
+  color: #fff;
+  resize: vertical;
+}
+
+button#speakBtn {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: linear-gradient(90deg,#ff7a59,#ffd36b);
+  border: none;
+  color: #0b0b0b;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+audio#ttsOutput {
+  width: 100%;
+  margin-top: 14px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.02);
+  padding: 6px;
+}
+
+/* responsive */
+@media (max-width:720px) {
+  .card { width: 96%; padding: 12px; }
+}

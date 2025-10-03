@@ -1,0 +1,66 @@
+/* LLM page — conversational feel */
+@import url('style.css');
+
+body {
+  background: linear-gradient(180deg,#08122b, #071029);
+  color: #e6eef8;
+  min-height: 100vh;
+}
+
+header { background: rgba(2,6,23,0.6); padding: 12px 20px; font-weight:700; }
+
+.hero { padding: 36px 18px; text-align:center; }
+
+.hero h1 {
+  font-size: 2rem;
+  background: linear-gradient(90deg,#7c3aed,#06b6d4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 6px;
+}
+
+.card-container { padding: 22px; display:flex; justify-content:center; }
+
+.card {
+  width: 820px;
+  border-radius: 12px;
+  padding: 18px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.03);
+}
+
+textarea#llmInput {
+  width: 100%;
+  min-height: 100px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.04);
+  background: rgba(0,0,0,0.45);
+  color: #fff;
+}
+
+button#askLLM {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 9px;
+  background: linear-gradient(90deg,#06b6d4,#7c3aed);
+  border: none;
+  color: #021025;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.output {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(0,0,0,0.6);
+  color: #dff7ff;
+  min-height: 80px;
+}
+
+/* responsive */
+@media (max-width:720px) {
+  .card { width: 96%; padding: 12px; }
+  .hero h1 { font-size: 1.4rem; }
+}

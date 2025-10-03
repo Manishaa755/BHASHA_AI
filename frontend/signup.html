@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <title>Bhasha — Sign Up</title>
+        <script>window.API_BASE = "http://127.0.0.1:8000";</script>
+        <link rel="icon" href="data:,">
+        <style>
+    :root{
+      color-scheme:dark;
+      --bg:#090a0f; --panel:#0f1117; --panel2:#0b0d14; --border:rgba(255,255,255,.08);
+      --text:#e9ecf1; --muted:#a5adbb; --brand1:#2563eb; --brand2:#7c3aed; --success:#22c55e; --danger:#ef4444;
+      --radius:16px; --shadow:0 24px 60px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:radial-gradient(900px 500px at 90% -10%, rgba(124,58,237,.12), transparent 60%),radial-gradient(800px 500px at -10% 0%, rgba(37,99,235,.12), transparent 60%),var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto}
+    .wrap{max-width:480px;margin:6vh auto;padding:16px}
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px}
+    h1{margin:0 0 6px;font-size:22px}
+    p.sub{margin:0 0 16px;color:var(--muted)}
+    .field{display:grid;gap:6px;margin:12px 0}
+    label{font-size:13px;color:var(--muted)}
+    input{background:var(--panel2);border:1px solid var(--border);border-radius:12px;color:var(--text);padding:12px 12px;font-size:14px;width:100%}
+    .btn{width:100%;margin-top:10px;border:none;border-radius:12px;padding:12px 14px;color:#fff;background:linear-gradient(135deg,var(--brand1),var(--brand2));cursor:pointer}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
+    .help{font-size:12px;color:var(--muted)}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:8px}
+    .rule{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+    .rule.ok{color:var(--success)}
+    .rule.bad{color:var(--danger)}
+    .hr{height:1px;background:var(--border);margin:14px 0}
+    .alt{font-size:13px;color:var(--muted);text-align:center;margin-top:8px}
+    a{color:#9db7ff;text-decoration:none}
+    .toast{position:fixed;left:50%;translate:-50% 0;bottom:24px;background:#121524;border:1px solid var(--border);padding:10px 14px;border-radius:12px;box-shadow:var(--shadow);font-size:13px;opacity:0;pointer-events:none;transform:translateY(6px);transition:opacity .2s ease, transform .2s ease}
+    .toast.show{opacity:1;transform:translateY(0)}
+    .error{color:var(--danger);font-size:12px;margin-top:4px;display:none}
+    .error.show{display:block}
+  </style>
+    </head>
+    <body>
+        <div class="wrap">
+            <div class="card">
+                <h1>Create your account</h1>
+                <p class="sub">Use your name, email and a secure password.</p>
+
+                <form id="form" novalidate>
+                    <div class="field">
+                        <label for="name">Full name</label>
+                        <input id="name" name="name" type="text"
+                            autocomplete="name" placeholder="e.g. Asha Verma"
+                            required>
+                        <div id="nameErr" class="error">Please enter your full
+                            name (min 2 characters).</div>
+                    </div>
+
+                    <div class="field">
+                        <label for="email">Email</label>
+                        <input id="email" name="email" type="email"
+                            autocomplete="email" placeholder="you@example.com"
+                            required>
+                        <div id="emailErr" class="error">Please enter a valid
+                            email address.</div>
+                    </div>
+
+                    <div class="field">
+                        <label for="password">Password</label>
+                        <input id="password" name="password" type="password"
+                            autocomplete="new-password"
+                            placeholder="Choose a strong password" required>
+                        <div class="row" id="rules">
+                            <div id="r-len" class="rule">• ≥ 5 characters</div>
+                            <div id="r-at" class="rule">• contains “@”</div>
+                            <div id="r-us" class="rule">• contains “_”</div>
+                            <div id="r-up" class="rule">• uppercase letter
+                                (A–Z)</div>
+                            <div id="r-lo" class="rule">• lowercase letter
+                                (a–z)</div>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label for="confirm">Confirm password</label>
+                        <input id="confirm" name="confirm" type="password"
+                            autocomplete="new-password"
+                            placeholder="Re-enter password" required>
+                        <div id="confirmErr" class="error">Passwords do not
+                            match.</div>
+                    </div>
+
+                    <button id="submitBtn" class="btn" type="submit"
+                        disabled>Sign up</button>
+                </form>
+
+                <div class="hr"></div>
+                <div class="alt">Already have an account? <a
+                        href="login.html">Log in</a></div>
+            </div>
+        </div>
+
+        <div id="toast" class="toast" role="status" aria-live="polite"></div>
+        <script>window.API_BASE = "http://127.0.0.1:8000";</script>
+
+        <script>
+    const API_BASE = (window.API_BASE || "http://127.0.0.1:8000").replace(/\/$/, "");
+
+    // Elements
+    const form = document.getElementById('form');
+    const nameEl = document.getElementById('name');
+    const emailEl = document.getElementById('email');
+    const passEl = document.getElementById('password');
+    const confEl = document.getElementById('confirm');
+    const submitBtn = document.getElementById('submitBtn');
+
+    const nameErr = document.getElementById('nameErr');
+    const emailErr = document.getElementById('emailErr');
+    const confirmErr = document.getElementById('confirmErr');
+
+    const rLen = document.getElementById('r-len');
+    const rAt  = document.getElementById('r-at');
+    const rUs  = document.getElementById('r-us');
+    const rUp  = document.getElementById('r-up');
+    const rLo  = document.getElementById('r-lo');
+
+    const toast = document.getElementById('toast');
+
+    function showToast(msg){
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 1800);
+    }
+
+    // Validators
+    const reEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    function setRule(el, ok){
+      el.classList.toggle('ok', ok);
+      el.classList.toggle('bad', !ok);
+    }
+
+    function validatePasswordRules(pw){
+      const okLen = pw.length >= 5;
+      const okAt  = pw.includes('@');
+      const okUs  = pw.includes('_');
+      const okUp  = /[A-Z]/.test(pw);
+      const okLo  = /[a-z]/.test(pw);
+
+      setRule(rLen, okLen);
+      setRule(rAt,  okAt);
+      setRule(rUs,  okUs);
+      setRule(rUp,  okUp);
+      setRule(rLo,  okLo);
+
+      return okLen && okAt && okUs && okUp && okLo;
+    }
+
+    function validateForm(){
+      const nameOk = (nameEl.value.trim().length >= 2);
+      const emailOk = reEmail.test(emailEl.value.trim());
+      const passOk = validatePasswordRules(passEl.value);
+      const matchOk = passOk && passEl.value === confEl.value;
+
+      nameErr.classList.toggle('show', !nameOk);
+      emailErr.classList.toggle('show', !emailOk);
+      confirmErr.classList.toggle('show', !(confEl.value.length ? matchOk : true));
+
+      submitBtn.disabled = !(nameOk && emailOk && passOk && matchOk);
+      return !submitBtn.disabled;
+    }
+
+    nameEl.addEventListener('input', validateForm);
+    emailEl.addEventListener('input', validateForm);
+    passEl.addEventListener('input', validateForm);
+    confEl.addEventListener('input', validateForm);
+
+    // Submit
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!validateForm()) return;
+
+      const payload = {
+        name: nameEl.value.trim(),
+        email: emailEl.value.trim().toLowerCase(),
+        password: passEl.value
+      };
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Creating account…";
+
+      try {
+        const resp = await fetch(API_BASE + "/auth/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const text = await resp.text();
+        let data = {};
+        try { data = JSON.parse(text); } catch {}
+
+        if (!resp.ok) {
+          const msg = (data && (data.detail || data.error)) || text || resp.statusText;
+          throw new Error(msg);
+        }
+
+        showToast("✅ Account created!");
+        // Optionally store token
+        if (data.token) localStorage.setItem("bhasha_token", data.token);
+
+        setTimeout(() => { window.location.href = "login.html"; }, 1500);
+      } catch (err) {
+        console.error(err);
+        showToast("❌ " + err.message);
+      } finally {
+        submitBtn.textContent = "Sign up";
+        submitBtn.disabled = false;
+      }
+    });
+
+    // Initialize rule colors on load
+    validatePasswordRules("");
+  </script>
+    </body>
+</html>

@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Bhasha — API Keys Dashboard</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <script>window.API_BASE = window.API_BASE || "http://127.0.0.1:8000";</script>
+
+    <style>
+    :root { --bg:#0f1115; --panel:#16181d; --panel-light:#1c1e25; --border:rgba(255,255,255,.06); --text:#e9ecf1; --muted:#9aa3b2; --brand1:#2563eb; --brand2:#7c3aed; --success:#10b981; --danger:#ef4444; --radius:12px; --shadow:0 8px 30px rgba(0,0,0,0.6); }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto;color:var(--text);background:var(--bg);display:flex;min-height:100vh}
+    .sidebar{width:240px;background:var(--panel);padding:28px 18px;display:flex;flex-direction:column;gap:16px;border-right:1px solid var(--border)}
+    .sidebar h2{margin:0;font-size:20px}
+    .sidebar nav{display:flex;flex-direction:column;gap:8px}
+    .sidebar button{background:transparent;color:var(--muted);border:0;padding:8px 10px;text-align:left;border-radius:8px;cursor:pointer}
+    .sidebar button.active, .sidebar button:hover{background:linear-gradient(90deg,var(--panel-light),#222); color:var(--text)}
+    .main{flex:1;padding:28px;display:flex;flex-direction:column;gap:20px}
+    header{display:flex;justify-content:space-between;align-items:center}
+    header h1{margin:0;font-size:22px}
+    .panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+    .controls{display:flex;gap:12px;align-items:center}
+    .keys{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+    .key{background:var(--panel-light);padding:12px;border-radius:12px;display:flex;justify-content:space-between;align-items:center}
+    .small{font-size:12px;color:var(--muted)}
+    button{padding:8px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:700}
+    button.primary{background:linear-gradient(135deg,var(--brand1),var(--brand2));color:#fff}
+    button.ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}
+    .secret-modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);min-width:320px;max-width:720px;background:var(--panel);border-radius:14px;padding:18px;border:1px solid var(--border);box-shadow:0 20px 60px rgba(0,0,0,0.8);z-index:60}
+    .modal-backdrop{position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:50}
+    pre.secret{background:#071018;padding:12px;border-radius:8px;color:#bfe8ff;overflow:auto;word-break:break-all}
+    .flex{display:flex;gap:8px;align-items:center}
+    .note{font-size:13px;color:var(--muted);margin-top:8px}
+    select{padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--panel);color:var(--text)}
+    .footer{color:var(--muted);font-size:13px}
+    .active-key { display:flex; gap:8px; align-items:center; margin-top:12px; }
+    .muted-pill { background: rgba(255,255,255,0.03); padding:8px 12px; border-radius:8px; color:var(--muted); }
+    </style>
+  </head>
+  <body>
+    <aside class="sidebar">
+      <h2>Bhasha</h2>
+      <nav>
+        <button class="active">Dashboard</button>
+        <button id="nav-keys">API Keys</button>
+        <button id="nav-activities">Activities</button>
+        <button id="nav-billing">Billing</button>
+        <button id="btn-logout">Logout</button>
+      </nav>
+      <div class="small note">You must be logged in to generate API keys.</div>
+    </aside>
+
+    <div class="main">
+      <header>
+        <div>
+          <h1>API Keys</h1>
+          <div id="user-info" class="small">Loading user...</div>
+        </div>
+        <div class="small footer">Server: <span id="server-url"></span></div>
+      </header>
+
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div class="controls">
+              <button id="generate-key" class="primary">+ Generate API Key</button>
+              <select id="keys-select" title="Choose a key preview"></select>
+              <button id="btn-check-balance" class="ghost">Check Balance</button>
+            </div>
+            <div class="note">When you create a key, the <strong>full secret is shown only once</strong>. Copy it now and store it safely.</div>
+          </div>
+          <div class="small">
+            <div>Tip: Use header <code>X-API-Key: &lt;your_secret&gt;</code> when calling /tool/* endpoints.</div>
+          </div>
+        </div>
+
+        <div class="keys" id="keys-list" style="margin-top:14px"></div>
+
+        <div class="active-key">
+          <div class="small">Active key:</div>
+          <div id="current-key-display" class="muted-pill">No key selected</div>
+          <button id="btn-copy-full-key" class="ghost" disabled>Copy Full Key</button>
+          <button id="btn-clear-key" class="ghost" disabled>Clear</button>
+        </div>
+
+        <h4 style="margin-top:18px">SDK Example (client-side)</h4>
+        <pre id="sdk-example" style="background:#0b0c0e;padding:12px;border-radius:8px;color:#cbd5e1;overflow:auto">
+import { BhashaClient } from "./bhasha.js";
+const client = new BhashaClient("YOUR_API_KEY");
+// client.stt(file) ...
+        </pre>
+      </div>
+
+      <div class="panel">
+        <h3>Live Activities</h3>
+        <div id="activities" style="min-height:80px" class="small">No recent activity.</div>
+      </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="modal-backdrop" class="modal-backdrop" style="display:none"></div>
+    <div id="secret-modal" class="secret-modal" style="display:none">
+      <h3 style="margin:0 0 8px 0">API Key Created</h3>
+      <div class="small">This is the only time the full API key will be shown. Copy and store it securely.</div>
+      <pre id="secret-value" class="secret" style="margin-top:10px">...</pre>
+      <div style="display:flex;justify-content:flex-end;margin-top:12px">
+        <button id="btn-copy-secret" class="primary">Copy</button>
+        <button id="btn-use-secret" class="ghost">Use (store locally)</button>
+        <button id="btn-close-secret" class="ghost">Close</button>
+      </div>
+    </div>
+
+<script type="module">
+/* Dashboard JS:
+   - Shows full secret only once.
+   - After Copy: modal shows masked value (first 2 + last 2 chars) and Copy disabled.
+   - Use button stores full secret locally (only if user explicitly chooses).
+*/
+
+const tokenKey = "bhasha_token";
+const fullKeyStorage = "bhasha_full_key";   // optional storage if user chooses 'Use'
+const apiBase = (window.API_BASE || "").replace(/\/$/, "");
+
+function log(...a){ console.log("[dashboard]", ...a); }
+function err(...a){ console.error("[dashboard]", ...a); }
+
+document.getElementById("server-url").textContent = apiBase || location.origin;
+
+// simple fetch wrapper that adds Bearer token from localStorage if present
+async function doFetch(path, opts = {}) {
+  opts.headers = opts.headers || {};
+  const token = localStorage.getItem(tokenKey);
+  if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+
+  // default JSON header
+  if (opts.body && !(opts.body instanceof FormData) && !opts.headers['Content-Type']) {
+    opts.headers['Content-Type'] = 'application/json';
+  }
+
+  const url = /^https?:\/\//i.test(path) ? path : (apiBase + (path.startsWith("/") ? path : "/" + path));
+  log("HTTP", opts.method || "GET", url);
+  try {
+    const res = await fetch(url, opts);
+    log("Response", res.status, res.statusText, res.headers.get("content-type"));
+    if (res.status === 401) {
+      localStorage.removeItem(tokenKey);
+      alert("Session expired or unauthorized. Please login again.");
+      window.location.href = '/static/login.html';
+      return null;
+    }
+    if (res.status === 204) return {};
+    const text = await res.text();
+    try {
+      return JSON.parse(text);
+    } catch(e){
+      return text;
+    }
+  } catch (e) {
+    err("Network error", e);
+    alert("Network error contacting server. See console for details.");
+    return null;
+  }
+}
+
+async function loadUser() {
+  const info = document.getElementById("user-info");
+  const token = localStorage.getItem(tokenKey);
+  if (!token) {
+    log("No token found; redirecting to login.");
+    window.location.href = "/static/login.html";
+    return;
+  }
+  const me = await doFetch('/auth/me', { method: 'GET' });
+  if (!me) return;
+  const user = me.user || me;
+  info.innerHTML = `Logged in as <b>${user.email || user.name || user}</b> (id: ${user.id || ''})`;
+  loadKeys();
+  refreshCurrentKeyUI();
+}
+
+document.getElementById("btn-logout").addEventListener("click", () => {
+  localStorage.removeItem(tokenKey);
+  window.location.href = "/static/login.html";
+});
+
+// create key
+document.getElementById("generate-key").addEventListener("click", async () => {
+  if (!confirm("Generate a new API key? The full key will be shown only once.")) return;
+  // server path
+  const res = await doFetch('/user/apikeys/create', { method: 'POST', body: JSON.stringify({ name: "web dashboard key" }) });
+  if (!res) { err("create returned null"); return; }
+  log("create response:", res);
+
+  // try to detect full secret in different shapes
+  const full = res.secret || res.api_key || res.key || res.token || res.value;
+  const kid = res.kid || res.kid_id || res.key_id || (res.kid || "");
+  if (full) {
+    // show the modal with the full secret
+    showSecretModal(full, kid);
+    // we *do not* automatically store full secret globally; we only store if user clicks Use
+    // attempt to write to clipboard (best-effort)
+    try { await navigator.clipboard.writeText(full); } catch(e){}
+  } else {
+    alert("Server did not return the full secret. It may only return previews. Check the Keys list.");
+  }
+  loadKeys();
+});
+
+// list keys
+async function loadKeys() {
+  const el = document.getElementById("keys-list");
+  const select = document.getElementById("keys-select");
+  el.innerHTML = "Loading keys...";
+  select.innerHTML = "<option value=''>-- select key --</option>";
+
+  const res = await doFetch('/user/apikeys', { method: 'GET' });
+  if (!res) { el.innerHTML = "Failed to load keys"; return; }
+  const keysArr = res.api_keys || res.keys || res || [];
+  el.innerHTML = "";
+  if (!Array.isArray(keysArr) || keysArr.length === 0) {
+    el.innerHTML = "<div class='small'>No keys found.</div>";
+    return;
+  }
+
+  for (const k of keysArr) {
+    const kid = k.kid || k.key_preview || k.kid_preview || k.key || k.id || ("k_" + Math.random().toString(36).slice(2,8));
+    const createdRaw = k.created_at || k.created || k.ts || k.createdAt || k.created_on || null;
+    const created = parseTimestamp(createdRaw);
+    const name = k.name || k.label || "";
+
+    const div = document.createElement("div");
+    div.className = "key";
+    // show kid but masked for display: keep first 2 and last 2 visible
+    const maskedKid = maskKey(kid);
+    div.innerHTML = `<div>
+        <strong title="${kid}">${maskedKid}${k.disabled ? " (disabled)" : ""}</strong>
+        <div class="small">created: ${created}</div>
+        ${name ? `<div class="small">name: ${name}</div>` : ""}
+      </div>`;
+
+    const right = document.createElement("div");
+    right.style.display = "flex"; right.style.gap = "8px"; right.style.alignItems = "center";
+
+    const copyBtn = document.createElement("button");
+    copyBtn.innerText = "Copy Preview";
+    copyBtn.className = "ghost";
+    copyBtn.onclick = async () => {
+      try { await navigator.clipboard.writeText(kid); copyBtn.innerText="Copied"; setTimeout(()=>copyBtn.innerText="Copy Preview",1500); } catch(e){ alert("Clipboard failed"); }
+    };
+
+    const useBtn = document.createElement("button");
+    useBtn.innerText = "Use";
+    useBtn.className = "primary";
+    useBtn.onclick = async () => {
+      // if we already stored full secret locally, allow reuse
+      const existing = localStorage.getItem(fullKeyStorage);
+      if (existing) {
+        const ok = confirm("A full key is already stored in this browser. Use that as the active key?");
+        if (ok) {
+          setSdkExample(existing);
+          refreshCurrentKeyUI();
+          return;
+        }
+      }
+      // Ask user to paste the secret shown once (or use clipboard)
+      const pasted = prompt("Paste the full API secret for this key (this value is shown only once at creation). It will be stored locally in this browser for SDK usage:");
+      if (!pasted) return;
+      // Optionally validate basic shape then store
+      localStorage.setItem(fullKeyStorage, pasted.trim());
+      setSdkExample(pasted.trim());
+      refreshCurrentKeyUI();
+      alert("Full key saved locally for SDK usage.");
+    };
+
+    const revokeBtn = document.createElement("button");
+    revokeBtn.innerText = "Revoke";
+    revokeBtn.className = "ghost";
+    revokeBtn.onclick = async () => {
+      if (!confirm("Revoke this key? This will permanently delete it.")) return;
+      const r = await doFetch('/user/apikeys/revoke', { method: 'POST', body: JSON.stringify({ kid }) });
+      log("revoke response:", r);
+      if (!r) { alert("Failed to revoke (no response)"); return; }
+      if (r.ok === true || r.revoked === true || r.status === "ok" || r.success === true) {
+        alert("Key revoked and removed.");
+      } else {
+        // server may return a message object
+        if (r.detail) alert("Revocation response: " + r.detail);
+        else alert("Revocation attempted (server returned: " + JSON.stringify(r) + ")");
+      }
+      // If we had stored the full key that matched this kid, clear it (best-effort).
+      const stored = localStorage.getItem(fullKeyStorage);
+      if (stored && stored.startsWith(kid.split("-")[0])) {
+        // best-effort: if stored begins with kid fragment (not guaranteed), clear it
+        localStorage.removeItem(fullKeyStorage);
+      }
+      loadKeys();
+    };
+
+    right.appendChild(copyBtn);
+    right.appendChild(useBtn);
+    right.appendChild(revokeBtn);
+    div.appendChild(right);
+    el.appendChild(div);
+
+    const opt = document.createElement("option");
+    opt.value = kid;
+    opt.innerText = maskedKid;
+    select.appendChild(opt);
+  }
+}
+
+function parseTimestamp(v) {
+  if (!v) return "unknown";
+  try {
+    if (typeof v === "number") {
+      if (v > 1e12) return new Date(v).toLocaleString();
+      if (v > 1e9) return new Date(v*1000).toLocaleString();
+    }
+    const d = new Date(v);
+    if (!isNaN(d.getTime())) return d.toLocaleString();
+    return String(v);
+  } catch (e) { return String(v); }
+}
+
+function maskKey(key) {
+  if (!key) return "none";
+  const s = String(key);
+  if (s.length <= 6) return s[0] + "..." + s.slice(-1);
+  return s.slice(0,2) + "..." + s.slice(-2);
+}
+
+// SDK example & active key UI
+function setSdkExample(key) {
+  const pre = document.getElementById("sdk-example");
+  if (!key) {
+    pre.textContent = `import { BhashaClient } from "./bhasha.js";\nconst client = new BhashaClient("YOUR_API_KEY");\n// client.stt(file) ...`;
+    return;
+  }
+  pre.textContent = `// SDK example - stored key: ${maskKey(key)}\nimport { BhashaClient } from "./bhasha.js";\nconst client = new BhashaClient("${key}");\n// Example: const r = await client.stt(file);\n`;
+}
+
+function refreshCurrentKeyUI() {
+  const cur = localStorage.getItem(fullKeyStorage);
+  const display = document.getElementById("current-key-display");
+  const btnCopy = document.getElementById("btn-copy-full-key");
+  const btnClear = document.getElementById("btn-clear-key");
+  if (cur) {
+    display.textContent = maskKey(cur);
+    display.title = "Full key stored locally";
+    btnCopy.disabled = false;
+    btnClear.disabled = false;
+    setSdkExample(cur);
+  } else {
+    display.textContent = "No key selected";
+    display.title = "";
+    btnCopy.disabled = true;
+    btnClear.disabled = true;
+    setSdkExample(null);
+  }
+  btnCopy.onclick = async () => {
+    const cur = localStorage.getItem(fullKeyStorage);
+    if (!cur) { alert("No key stored"); return; }
+    try { await navigator.clipboard.writeText(cur); alert("Full key copied to clipboard"); } catch (e) { alert("Clipboard failed"); }
+  };
+  btnClear.onclick = () => {
+    if (!confirm("Clear stored API key from this browser?")) return;
+    localStorage.removeItem(fullKeyStorage);
+    refreshCurrentKeyUI();
+    alert("Stored key cleared.");
+  };
+}
+
+// Check balance: must have full secret stored locally
+document.getElementById("btn-check-balance").addEventListener("click", async () => {
+  const select = document.getElementById("keys-select");
+  const selected = select.value;
+  if (!selected) { alert("Select a key preview from the dropdown first"); return; }
+  const stored = localStorage.getItem(fullKeyStorage);
+  if (!stored) { alert("To check balance you must paste the full key via the 'Use' button or store it when key was created."); return; }
+  try {
+    const res = await fetch(apiBase + '/tool/balance', { method: 'GET', headers: { 'X-API-Key': stored }});
+    if (!res.ok) {
+      const txt = await res.text();
+      alert("Balance check failed: " + res.status + " - " + txt);
+      return;
+    }
+    const j = await res.json();
+    alert("Balance: " + JSON.stringify(j, null, 2));
+  } catch (e) {
+    err("balance error", e);
+    alert("Balance check network error. See console.");
+  }
+});
+
+// Secret modal logic
+function showSecretModal(fullSecret, kid) {
+  const modal = document.getElementById("secret-modal");
+  const backdrop = document.getElementById("modal-backdrop");
+  const val = document.getElementById("secret-value");
+  const btnCopy = document.getElementById("btn-copy-secret");
+  const btnClose = document.getElementById("btn-close-secret");
+  const btnUse = document.getElementById("btn-use-secret");
+
+  // initial: show full
+  val.textContent = fullSecret;
+  btnCopy.disabled = false;
+  btnCopy.textContent = "Copy";
+  btnUse.disabled = false;
+
+  backdrop.style.display = "block";
+  modal.style.display = "block";
+
+  // copy handler: copy once, then mask & disable
+  const onCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(fullSecret);
+    } catch (e) {
+      err("clipboard failed", e);
+      alert("Could not copy to clipboard. Please copy manually from the modal.");
+      return;
+    }
+    // after successful copy — mask and disable copying
+    const masked = maskKey(fullSecret);
+    val.textContent = masked;
+    btnCopy.disabled = true;
+    btnCopy.textContent = "Copied (one-time)";
+    // Optionally pre-store the full secret locally — we will ask user via the Use button.
+    // NOTE: do not auto-store if you prefer more secure behavior.
+  };
+
+  const onUse = () => {
+    // store full secret locally (explicit user action)
+    try {
+      localStorage.setItem(fullKeyStorage, fullSecret);
+      setSdkExample(fullSecret);
+      refreshCurrentKeyUI();
+      alert("Full key saved locally for SDK usage.");
+      // disable Use and Copy (we still keep masked display)
+      btnUse.disabled = true;
+      btnCopy.disabled = true;
+      val.textContent = maskKey(fullSecret);
+    } catch (e) {
+      err("store failed", e);
+      alert("Failed to store key locally.");
+    }
+  };
+
+  const onClose = () => {
+    // remove full secret from DOM (mask it) and disable copy button
+    val.textContent = maskKey(fullSecret);
+    btnCopy.disabled = true;
+    btnUse.disabled = false; // allow storing later if desired
+    backdrop.style.display = "none";
+    modal.style.display = "none";
+    // remove event listeners to avoid duplicates
+    btnCopy.removeEventListener("click", onCopy);
+    btnClose.removeEventListener("click", onClose);
+    btnUse.removeEventListener("click", onUse);
+  };
+
+  btnCopy.addEventListener("click", onCopy);
+  btnUse.addEventListener("click", onUse);
+  btnClose.addEventListener("click", onClose);
+}
+
+// initial run
+loadUser();
+</script>
+  </body>
+</html>

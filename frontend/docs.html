@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <title>Bhasha — Project Docs</title>
+        <link rel="icon" href="data:,">
+        <style>
+  :root{
+    --bg:#0b1020; --panel:#0f152a; --card:#111936; --border:rgba(255,255,255,.09);
+    --text:#e7ecf7; --muted:#9fb0d0; --accent:#5b8cff; --accent2:#7c59ff; --ok:#22c55e; --warn:#f59e0b; --err:#ef4444;
+    --radius:16px; --shadow:0 22px 60px rgba(0,0,0,.35);
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:linear-gradient(180deg,#0b1020,#0c1226);color:var(--text);font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial}
+  a{color:#a7c3ff;text-decoration:none} a:hover{text-decoration:underline}
+  .layout{display:grid;grid-template-columns:280px 1fr;gap:18px;min-height:100vh}
+  .side{position:sticky;top:0;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--border);padding:18px}
+  .brand{display:flex;gap:10px;align-items:center;margin-bottom:12px}
+  .logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2))}
+  h1{font-size:22px;margin:0}
+  .search{margin:8px 0 14px} .search input{width:100%;padding:10px 12px;border:1px solid var(--border);background:#0c1230;color:var(--text);border-radius:10px}
+  .toc{display:grid;gap:6px}
+  .toc a{display:block;padding:8px 10px;border-radius:10px;color:var(--muted);border:1px solid transparent}
+  .toc a.active,.toc a:hover{background:#0c1230;border-color:var(--border);color:#dfe8ff}
+  .content{padding:24px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin-bottom:18px}
+  .card h2{margin:0 0 12px}
+  .grid{display:grid;gap:16px}
+  @media (min-width:960px){ .grid-2{grid-template-columns:1fr 1fr} .grid-3{grid-template-columns:1fr 1fr 1fr} }
+  code, pre{font-family:var(--mono);font-size:.92rem}
+  pre{background:#0b1230;border:1px solid var(--border);padding:12px;border-radius:12px;overflow:auto}
+  .kbd{font-family:var(--mono);font-size:.85rem;background:#0b1230;border:1px solid var(--border);padding:2px 6px;border-radius:6px}
+  .tag{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid var(--border);background:#0c1436;color:#d8e3ff;margin-right:6px;font-size:.8rem}
+  .pill{display:inline-flex;gap:8px;align-items:center;background:#0c1436;border:1px solid var(--border);padding:6px 10px;border-radius:999px;color:#9fb0d0}
+  .list-tight li{margin:.3rem 0}
+  .copy{position:relative}
+  .copy button{position:absolute;right:10px;top:10px;background:#1b2347;border:1px solid var(--border);color:#cfe0ff;border-radius:8px;padding:6px 8px;cursor:pointer}
+  .ok{color:var(--ok)} .warn{color:var(--warn)} .err{color:var(--err)}
+  .foot{margin:16px 0 6px;color:var(--muted);font-size:.9rem}
+  .flex{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .small{font-size:.92rem;color:var(--muted)}
+  .hr{height:1px;background:var(--border);margin:18px 0}
+  @media (max-width:960px){ .layout{grid-template-columns:1fr} .side{position:relative;height:auto} }
+</style>
+    </head>
+    <body>
+        <div class="layout">
+            <!-- Sidebar -->
+            <aside class="side">
+                <div class="brand">
+                    <div class="logo"></div>
+                    <h1>Bhasha Docs</h1>
+                </div>
+                <div class="search"><input id="search"
+                        placeholder="Filter sections…" /></div>
+                <nav id="toc" class="toc">
+                    <a href="#overview">Overview</a>
+                    <a href="#features">Features</a>
+                    <a href="#arch">Architecture</a>
+                    <a href="#setup">Setup</a>
+                    <a href="#env">Environment Variables</a>
+                    <a href="#run">Run & Dev</a>
+                    <a href="#frontend">Frontend Pages</a>
+                    <a href="#api">API Endpoints</a>
+                    <a href="#reasoning">LLM Reasoning</a>
+                    <a href="#lang">Language Detection</a>
+                    <a href="#stt-tts-s2s">STT / TTS / S2S</a>
+                    <a href="#auth">Auth</a>
+                    <a href="#troubleshooting">Troubleshooting</a>
+                    <a href="#deploy">Deployment</a>
+                    <a href="#security">Security Notes</a>
+                    <a href="#faq">FAQ</a>
+                    <a href="#structure">Directory Structure</a>
+                    <a href="#credits">Credits</a>
+                </nav>
+            </aside>
+
+            <!-- Main content -->
+            <main class="content">
+                <!-- Overview -->
+                <section id="overview" class="card">
+                    <h2>Overview</h2>
+                    <p><strong>Bhasha</strong> is a multilingual Voice &
+                        Reasoning app built with FastAPI. It supports:
+                        speech-to-text (STT), text-to-speech (TTS),
+                        speech-to-speech (S2S), robust language detection
+                        (200+),
+                        and LLM document reasoning (upload
+                        PDF/DOCX/XLSX/PPTX/TXT/MD/JSON, summarize or Q&amp;A).
+                    </p>
+                    <div class="flex">
+                        <span class="tag">FastAPI</span>
+                        <span class="tag">OpenAI (Chat, Whisper, TTS)</span>
+                        <span class="tag">pdfplumber / python-docx / openpyxl /
+                            python-pptx</span>
+                        <span class="tag">langdetect (+optional
+                            fastText/CLD3)</span>
+                    </div>
+                </section>
+
+                <!-- Features -->
+                <section id="features" class="card">
+                    <h2>Features</h2>
+                    <ul class="list-tight">
+                        <li>🎙️ <b>STT:</b> Transcribe speech (MediaRecorder or
+                            uploads) with Whisper.</li>
+                        <li>🗣️ <b>TTS:</b> Natural voice replies with
+                            selectable format & voice.</li>
+                        <li>🔁 <b>S2S:</b> Speech→(LLM)→Speech with language
+                            routing.</li>
+                        <li>🌍 <b>Language Detection:</b> Ensemble (langdetect +
+                            optional fastText / CLD3 + LLM fallback).</li>
+                        <li>📄 <b>LLM Document Reasoning:</b> Upload files or
+                            paste text; auto summarize or Q&amp;A in any
+                            language.</li>
+                        <li>🔐 <b>Auth:</b> Simple SQLite + PBKDF2 + HMAC tokens
+                            (email/password).</li>
+                        <li>🌐 <b>Frontend:</b> Clean, modern HTML/CSS pages
+                            served via FastAPI StaticFiles.</li>
+                    </ul>
+                </section>
+
+                <!-- Architecture -->
+                <section id="arch" class="card">
+                    <h2>Architecture</h2>
+                    <div class="grid grid-2">
+                        <div>
+                            <h3>Backend</h3>
+                            <ul class="list-tight">
+                                <li><b>FastAPI</b> app
+                                    (<code>app.py</code>)</li>
+                                <li>Routes for STT, TTS, S2S, Language
+                                    Detection, Reasoning, Auth</li>
+                                <li>Static serving for frontend pages</li>
+                                <li>Optional fastText/CLD3 for better language
+                                    ID</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h3>Frontend</h3>
+                            <ul class="list-tight">
+                                <li>Vanilla HTML/CSS/JS</li>
+                                <li>Pages: <code>index.html</code>,
+                                    <code>stt.html</code>,
+                                    <code>tts.html</code>,
+                                    <code>sts.html</code>,
+                                    <code>langdetect.html</code>,
+                                    <code>reasoning.html</code>,
+                                    <code>docs.html</code></li>
+                                <li>Fetch APIs from <code>/v1/*</code></li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Setup -->
+                <section id="setup" class="card">
+                    <h2>Setup</h2>
+                    <ol>
+                        <li>Install Python 3.9+ and FFmpeg (for
+                            <code>pydub</code> conversions).</li>
+                        <li>Create & activate a virtual env:
+                            <pre><code>python -m venv .venv
+# Windows
+.venv\Scripts\activate
+# macOS/Linux
+source .venv/bin/activate</code></pre>
+                        </li>
+                        <li>Install dependencies:
+                            <pre><code>pip install fastapi uvicorn httpx python-dotenv
+pip install pydub langdetect
+pip install pdfplumber python-docx openpyxl python-pptx
+# optional for better language ID:
+pip install fasttext-wheel pycld3</code></pre>
+                        </li>
+                        <li>Create <code>.env</code> in backend root:
+                            <pre><code>OPENAI_API_KEY=sk-...
+OPENAI_API_BASE=https://api.openai.com/v1
+WHISPER_MODEL=whisper-1
+CHAT_MODEL=gpt-4o-mini
+TTS_MODEL=tts-1
+TTS_VOICE=alloy
+TTS_FORMAT=mp3
+
+# Optional:
+FASTTEXT_MODEL_PATH=D:\path\to\lid.176.ftz
+AUTH_DB_PATH=auth.db
+AUTH_TOKEN_SECRET=super-secret-string
+AUTH_TOKEN_TTL=86400
+FRONTEND_DIR=../frontend</code></pre>
+                        </li>
+                    </ol>
+                    <p class="small">Tip: ensure <code>FRONTEND_DIR</code>
+                        points to your frontend folder. By default it’s
+                        <code>../frontend</code> from <code>app.py</code>.</p>
+                </section>
+
+                <!-- Run -->
+                <section id="run" class="card">
+                    <h2>Run & Development</h2>
+                    <pre><code>uvicorn app:app --reload --port 8000</code></pre>
+                    <p>Open <a href="http://127.0.0.1:8000"
+                            target="_blank">http://127.0.0.1:8000</a></p>
+                    <div class="hr"></div>
+                    <p class="small">If you see warnings like
+                        “FASTTEXT_MODEL_PATH not found” or “pycld3 unavailable”,
+                        the app still works (LLM fallback is used). To enable
+                        them, install the packages and set the model path.</p>
+                </section>
+
+                <!-- Frontend -->
+                <section id="frontend" class="card">
+                    <h2>Frontend Pages</h2>
+                    <ul class="list-tight">
+                        <li><code>/</code> → <b>index.html</b> (landing)</li>
+                        <li><code>/stt</code> → <b>stt.html</b> (speech →
+                            text)</li>
+                        <li><code>/tts</code> → <b>tts.html</b> (text →
+                            speech)</li>
+                        <li><code>/sts</code> → <b>sts.html</b> (speech →
+                            speech)</li>
+                        <li><code>/langdetect</code> → <b>langdetect.html</b>
+                            (200+ language ID + translate)</li>
+                        <li><code>/reasoning</code> → <b>reasoning.html</b> (LLM
+                            document reasoning)</li>
+                        <li><code>/docs</code> → <b>docs.html</b> (this page,
+                            optional route alias below)</li>
+                    </ul>
+                    <p class="small">Make sure these files exist inside the
+                        folder served by
+                        <code>StaticFiles(directory=FRONTEND_DIR)</code>.</p>
+                </section>
+
+                <!-- API -->
+                <section id="api" class="card">
+                    <h2>API Endpoints</h2>
+
+                    <h3>Health</h3>
+                    <div class="copy">
+                        <button data-copy="#curl-health">Copy</button>
+                        <pre
+                            id="curl-health"><code>curl http://127.0.0.1:8000/health</code></pre>
+                    </div>
+
+                    <h3>Language Detect</h3>
+                    <div class="grid grid-2">
+                        <div>
+                            <p><b>From text</b></p>
+                            <div class="copy">
+                                <button data-copy="#curl-ld-text">Copy</button>
+                                <pre
+                                    id="curl-ld-text"><code>curl -X POST http://127.0.0.1:8000/v1/lang-detect \
+  -F "text=नमस्ते, आप कैसे हैं?"</code></pre>
+                            </div>
+                        </div>
+                        <div>
+                            <p><b>From audio (webm)</b></p>
+                            <div class="copy">
+                                <button data-copy="#curl-ld-audio">Copy</button>
+                                <pre
+                                    id="curl-ld-audio"><code>curl -X POST http://127.0.0.1:8000/v1/lang-detect \
+  -F "file=@sample.webm"</code></pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3>Translate</h3>
+                    <div class="copy">
+                        <button data-copy="#curl-translate">Copy</button>
+                        <pre
+                            id="curl-translate"><code>curl -X POST http://127.0.0.1:8000/v1/translate \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Bonjour tout le monde","target_lang":"en"}'</code></pre>
+                    </div>
+
+                    <h3>Text → Speech</h3>
+                    <div class="copy">
+                        <button data-copy="#curl-tts">Copy</button>
+                        <pre
+                            id="curl-tts"><code>curl -X POST http://127.0.0.1:8000/v1/tts-speak \
+  -H "Content-Type: application/json" \
+  -o reply.mp3 \
+  -d '{"text":"Hello world!","voice":"alloy","format":"mp3"}'</code></pre>
+                    </div>
+
+                    <h3>Speech → Speech</h3>
+                    <div class="copy">
+                        <button data-copy="#curl-s2s">Copy</button>
+                        <pre
+                            id="curl-s2s"><code>curl -X POST "http://127.0.0.1:8000/v1/s2s?target_lang=auto&voice=alloy&format=mp3" \
+  -F "file=@sample.webm" \
+  -o reply.mp3</code></pre>
+                    </div>
+
+                    <h3>Reasoning (files or text)</h3>
+                    <div class="grid grid-2">
+                        <div>
+                            <p><b>Upload a document + summarize</b></p>
+                            <div class="copy">
+                                <button
+                                    data-copy="#curl-reason-doc">Copy</button>
+                                <pre
+                                    id="curl-reason-doc"><code>curl -X POST http://127.0.0.1:8000/v1/reason-doc \
+  -F "file=@report.pdf" \
+  -F "query=Summarize this" \
+  -F "target_lang=auto"</code></pre>
+                            </div>
+                        </div>
+                        <div>
+                            <p><b>Paste text + Q&amp;A</b></p>
+                            <div class="copy">
+                                <button
+                                    data-copy="#curl-reason-text">Copy</button>
+                                <pre
+                                    id="curl-reason-text"><code>curl -X POST http://127.0.0.1:8000/v1/reason-doc \
+  -F "text=...paste content here..." \
+  -F "query=What are the key risks?" \
+  -F "target_lang=en"</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Reasoning -->
+                <section id="reasoning" class="card">
+                    <h2>LLM Document Reasoning</h2>
+                    <ul class="list-tight">
+                        <li>Supports: <code>.pdf</code>, <code>.docx</code>,
+                            <code>.pptx</code>,
+                            <code>.xlsx</code>/<code>.xlsm</code>,
+                            <code>.txt</code>, <code>.md</code>,
+                            <code>.json</code>, <code>.csv</code>,
+                            <code>.htm</code>/<code>.html</code>,
+                            <code>.rtf</code>.</li>
+                        <li>Auto intent: “summarize this” → summary, else
+                            Q&amp;A if a question is provided.</li>
+                        <li>Reply language defaults to detected input language
+                            unless overridden by <code>target_lang</code>.</li>
+                    </ul>
+                    <p class="small">Ensure parsers are installed:
+                        <code>pdfplumber</code>, <code>python-docx</code>,
+                        <code>openpyxl</code>, <code>python-pptx</code>.</p>
+                </section>
+
+                <!-- Language detection -->
+                <section id="lang" class="card">
+                    <h2>Language Detection (200+)</h2>
+                    <p>Ensemble approach:</p>
+                    <ul class="list-tight">
+                        <li><b>langdetect</b> (deterministic with
+                            <code>DetectorFactory.seed=42</code>)</li>
+                        <li><b>fastText</b> (optional, ~176 langs) — set
+                            <code>FASTTEXT_MODEL_PATH</code></li>
+                        <li><b>CLD3</b> (optional, 100+)</li>
+                        <li><b>LLM fallback</b> via
+                            <code>/chat/completions</code></li>
+                    </ul>
+                    <p class="small">If optional libs aren’t installed, the app
+                        falls back gracefully.</p>
+                </section>
+
+                <!-- STT/TTS/S2S -->
+                <section id="stt-tts-s2s" class="card">
+                    <h2>STT / TTS / S2S</h2>
+                    <ul class="list-tight">
+                        <li><b>STT:</b> Uses OpenAI Whisper
+                            (<code>WHISPER_MODEL</code>), with retry & WAV
+                            fallback conversion (via <code>pydub</code> +
+                            FFmpeg).</li>
+                        <li><b>TTS:</b> Uses <code>/audio/speech</code> with
+                            <code>TTS_MODEL</code>, voice & format options.</li>
+                        <li><b>S2S:</b> Pipeline: STT → intent/language routing
+                            → LLM reply → TTS.</li>
+                        <li><b>“Write X in Y” handling:</b> LLM prompt enforces
+                            reply language when user explicitly asks. For
+                            stricter behavior, set
+                            <code>enforce_lang=True</code> in prompts.</li>
+                    </ul>
+                </section>
+
+                <!-- Auth -->
+                <section id="auth" class="card">
+                    <h2>Auth</h2>
+                    <ul class="list-tight">
+                        <li>SQLite DB with <b>PBKDF2-SHA256</b> (200k
+                            iterations)</li>
+                        <li>HMAC-signed tokens with TTL
+                            (<code>AUTH_TOKEN_TTL</code>)</li>
+                        <li>Routes: <code>/auth/signup</code>,
+                            <code>/auth/login</code></li>
+                    </ul>
+                    <p class="small">Use HTTPS + secure secrets in
+                        production.</p>
+                </section>
+
+                <!-- Troubleshooting -->
+                <section id="troubleshooting" class="card">
+                    <h2>Troubleshooting</h2>
+                    <ul class="list-tight">
+                        <li class="warn"><b>FASTTEXT_MODEL_PATH not found</b> —
+                            set correct path to <code>lid.176.ftz</code>, else
+                            it falls back.</li>
+                        <li class="warn"><b>pycld3 unavailable</b> — install
+                            <code>pycld3</code> (may require C++ toolchain) or
+                            ignore.</li>
+                        <li class="err"><b>Missing OPENAI_API_KEY</b> — set in
+                            <code>.env</code>.</li>
+                        <li class="warn"><b>MediaRecorder issues</b> — use
+                            Chrome/Edge; allow microphone; HTTPS or
+                            localhost.</li>
+                        <li class="warn"><b>PDF text extraction blank</b> —
+                            scanned PDFs need OCR (outside scope). Convert to
+                            text first.</li>
+                    </ul>
+                </section>
+
+                <!-- Deployment -->
+                <section id="deploy" class="card">
+                    <h2>Deployment</h2>
+                    <ol>
+                        <li>Set all env vars for production; use strong
+                            <code>AUTH_TOKEN_SECRET</code>.</li>
+                        <li>Build a proper server: <code>uvicorn app:app --host
+                                0.0.0.0 --port 8000</code> behind
+                            Nginx/Apache.</li>
+                        <li>Serve static <code>frontend/</code> via FastAPI or
+                            CDN.</li>
+                        <li>Use HTTPS (Let’s Encrypt) and secure CORS/Allowed
+                            Origins for your domain(s).</li>
+                    </ol>
+                </section>
+
+                <!-- Security -->
+                <section id="security" class="card">
+                    <h2>Security Notes</h2>
+                    <ul class="list-tight">
+                        <li>Lock down <code>allow_origins</code> (CORS) in
+                            production.</li>
+                        <li>Don’t expose raw OpenAI keys in frontend.</li>
+                        <li>Validate & limit file sizes for reasoning
+                            uploads.</li>
+                        <li>Consider rate-limiting & logging.</li>
+                    </ul>
+                </section>
+
+                <!-- FAQ -->
+                <section id="faq" class="card">
+                    <h2>FAQ</h2>
+                    <p><b>Q:</b> “/sts returns Not Found?”<br>
+                        <b>A:</b> Ensure <code>sts.html</code> exists in
+                        <code>FRONTEND_DIR</code>. The backend serves it at
+                        <code>/sts</code>.
+                    </p>
+                    <p><b>Q:</b> “Why is the reply not in the requested
+                        language?”<br>
+                        <b>A:</b> We now enforce language in prompts when user
+                        asks e.g. “write X in Y”. Verify your prompt plumbing
+                        and <code>enforce_lang</code> usage.
+                    </p>
+                </section>
+
+                <!-- Structure -->
+                <section id="structure" class="card">
+                    <h2>Directory Structure</h2>
+                    <pre><code>project-root/
+├─ backend/
+│  ├─ app.py
+│  ├─ .env
+│  └─ auth.db (auto-created)
+└─ frontend/
+   ├─ index.html
+   ├─ stt.html
+   ├─ tts.html
+   ├─ sts.html
+   ├─ langdetect.html
+   ├─ reasoning.html
+   └─ docs.html   ← this file</code></pre>
+                </section>
+
+                <section id="credits" class="card">
+                    <h2>Credits</h2>
+                    <p>Built with ❤️ using FastAPI, OpenAI APIs, and open-source
+                        parsers.</p>
+                    <p class="foot">© Bhasha — Multilingual Voice &
+                        Reasoning</p>
+                </section>
+            </main>
+        </div>
+
+        <script>
+  // Simple TOC filter + active link highlighting + copy buttons
+  const toc = document.getElementById('toc');
+  const search = document.getElementById('search');
+  const links = [...toc.querySelectorAll('a')];
+  search.addEventListener('input', () => {
+    const q = search.value.trim().toLowerCase();
+    links.forEach(a => {
+      const show = !q || a.textContent.toLowerCase().includes(q);
+      a.style.display = show ? '' : 'none';
+    });
+  });
+
+  const sections = [...document.querySelectorAll('section[id]')];
+  const onScroll = () => {
+    let cur = sections[0].id;
+    for (const s of sections){
+      const top = s.getBoundingClientRect().top;
+      if (top < 120) cur = s.id;
+      else break;
+    }
+    links.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + cur));
+  };
+  document.addEventListener('scroll', onScroll, { passive:true });
+  onScroll();
+
+  document.querySelectorAll('.copy button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const sel = btn.getAttribute('data-copy');
+      const pre = document.querySelector(sel);
+      if (!pre) return;
+      const txt = pre.innerText;
+      navigator.clipboard.writeText(txt).then(()=>{
+        btn.textContent = 'Copied!';
+        setTimeout(()=> btn.textContent = 'Copy', 1200);
+      });
+    });
+  });
+</script>
+    </body>
+</html>

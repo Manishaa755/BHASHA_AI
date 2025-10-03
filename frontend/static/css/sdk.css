@@ -1,0 +1,48 @@
+/* SDK page — developer / console style */
+@import url('style.css');
+
+body {
+  background: linear-gradient(180deg,#081025,#041021);
+  color: #e6f3ff;
+  min-height: 100vh;
+}
+
+header { padding: 12px 18px; background: rgba(2,6,23,0.6); font-weight:700; }
+
+.hero { padding: 28px 18px; text-align:center; }
+
+.hero h1 { font-size: 1.9rem; color: #fff; margin-bottom: 8px; }
+
+.card-container { padding: 18px; display:flex; justify-content:center; }
+
+.card {
+  width: 840px;
+  padding: 16px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.03);
+}
+
+button#testSDK {
+  background: linear-gradient(90deg,#06b6d4,#7c3aed);
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  color: #021025;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+#sdkOutput {
+  margin-top: 12px;
+  background: rgba(0,0,0,0.55);
+  padding: 12px;
+  border-radius: 8px;
+  min-height: 56px;
+  color: #cfeffd;
+}
+
+/* responsive */
+@media (max-width:720px){
+  .card { width: 96%; padding: 12px; }
+}

@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Bhasha — Speech ↔ Speech Assistant</title>
+
+  <!-- If your backend is on a different host/port, change this: -->
+  <script>window.API_BASE = "http://127.0.0.1:8000";</script>
+
+  <!-- Fonts: add Indic-supporting fallbacks so Gujarati/Hindi/Tamil etc. render -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Noto+Sans:wght@400;600&family=Noto+Sans+Devanagari:wght@400;600&family=Noto+Sans+Gujarati:wght@400;600&family=Noto+Sans+Bengali:wght@400;600&family=Noto+Sans+Tamil:wght@400;600&family=Noto+Sans+Telugu:wght@400;600&family=Noto+Sans+Malayalam:wght@400;600&family=Noto+Sans+Gurmukhi:wght@400;600&family=Noto+Sans+Kannada:wght@400;600&family=Noto+Sans+Oriya:wght@400;600&family=Noto+Sans+Assamese:wght@400;600&display=swap" rel="stylesheet">
+
+  <link rel="icon" href="data:,">
+  <style>
+    :root{
+      color-scheme:dark; --bg:#0a0b0f; --card:#0f1320; --muted:#9aa4b2; --text:#eef2f7;
+      --line:rgba(255,255,255,.08); --brand1:#6d5efc; --brand2:#00e7f0; --danger:#ef4444;
+      --radius:16px; --shadow:0 20px 70px rgba(0,0,0,.45); --glass:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background:
+        radial-gradient(1200px 600px at 20% -10%, rgba(109,94,252,.18), transparent 60%),
+        radial-gradient(1000px 600px at 110% 10%, rgba(0,231,240,.12), transparent 50%),
+        var(--bg);
+      color:var(--text);
+      font-family: Inter, "Noto Sans", "Noto Sans Devanagari", "Noto Sans Gujarati", "Noto Sans Bengali",
+                   "Noto Sans Tamil", "Noto Sans Telugu", "Noto Sans Malayalam", "Noto Sans Gurmukhi",
+                   "Noto Sans Kannada", "Noto Sans Oriya", "Noto Sans Assamese",
+                   ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    a{color:inherit; text-decoration:none}
+    .container{max-width:1120px; margin:0 auto; padding:24px}
+    .nav{display:flex; align-items:center; justify-content:space-between; gap:16px; padding:10px 0 8px;}
+    .logo{display:flex; align-items:center; gap:10px; font-weight:700;}
+    .logo-badge{width:34px; height:34px; border-radius:10px; background: conic-gradient(from 180deg at 50% 50%, var(--brand1), var(--brand2)); display:grid; place-items:center; color:white; font-size:18px; box-shadow: var(--shadow);}
+    .navlinks{display:flex; gap:12px; align-items:center; opacity:.92}
+    .navlinks a{padding:8px 12px; border-radius:10px; border:1px solid transparent}
+    .navlinks a.active{border-color: var(--line); background: rgba(255,255,255,.05)}
+    .hero{margin-top:10px; padding:28px; border-radius:var(--radius); background: var(--glass); border:1px solid var(--line); box-shadow: var(--shadow);}
+    .hero h1{margin:6px 0 8px; font-size:28px; letter-spacing:.3px}
+    .hero p{margin:0; color:var(--muted)}
+    .panel{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow: var(--shadow); padding:18px;}
+    .row{display:flex; gap:12px; flex-wrap:wrap; align-items:center}
+    .btn{border:none; color:white; font-weight:600; cursor:pointer; border-radius:14px; padding:12px 16px; letter-spacing:.2px; background: linear-gradient(135deg, var(--brand1), var(--brand2));}
+    .btn.danger{ background: var(--danger)} .btn:disabled{opacity:.6; cursor:not-allowed}
+    .select, .input{
+      background:#12182a; color:var(--text); border:1px solid var(--line); border-radius:12px; padding:10px 12px;
+      font-family: inherit;
+    }
+    .pill{padding:6px 10px; border:1px solid var(--line); border-radius:999px; color:var(--muted); font-size:12px}
+    .split{display:grid; gap:16px; grid-template-columns: 1.15fr 1fr}
+    .textout{
+      background:#0d1222; border:1px solid var(--line); border-radius:12px; padding:12px;
+      color:#cfe4ff; font-size:16px; white-space:pre-wrap; min-height:48px; line-height:1.5;
+      font-family: inherit;
+    }
+    audio{width:100%}
+    .badge{display:inline-flex; align-items:center; gap:8px; padding:8px 10px; border-radius:12px; border:1px solid var(--line); background: rgba(255,255,255,.04); color:#d0d6e2; font-size:12px}
+    .badges{display:flex; gap:8px; flex-wrap:wrap}
+    .label{color:var(--muted); font-size:13px}
+    footer{opacity:.7; font-size:12px; text-align:center; margin:24px 0 6px}
+    .toast{position:fixed; right:20px; bottom:20px; max-width:340px; z-index:10; background:#12182a; color:#e9f2ff; border:1px solid var(--line); border-radius:12px; padding:12px 14px; display:none; box-shadow: var(--shadow);} .toast.show{display:block}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <nav class="nav">
+      <div class="logo"><div class="logo-badge">भ</div><div>Bhasha</div></div>
+      <div class="navlinks">
+        <a href="/static/index.html">Home</a>
+        <a href="/static/stt.html">STT</a>
+        <a href="/static/tts.html">TTS</a>
+        <a class="active" href="/static/sts.html">Speech↔Speech</a>
+      </div>
+    </nav>
+
+    <section class="hero">
+      <h1>Speech ↔ Speech Assistant</h1>
+      <p>Speak in your native language. The reply is spoken in the <b>same language</b> by default.
+        If you say “write a poem on nature <i>in Hindi</i>”, it detects that and speaks in <b>Hindi</b>.
+        You can also override the output language manually below.</p>
+    </section>
+
+    <section class="panel" style="margin-top:16px">
+      <div class="row">
+        <button id="recBtn" class="btn">🎙️ Start Recording</button>
+        <button id="stopBtn" class="btn danger" disabled>⏹ Stop</button>
+
+        <div>
+          <label class="label" for="voice">Voice</label><br/>
+          <select id="voice" class="select">
+            <option value="alloy" selected>alloy</option>
+            <option value="verse">verse</option>
+            <option value="coral">coral</option>
+            <option value="sage">sage</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="label" for="format">Format</label><br/>
+          <select id="format" class="select">
+            <option value="mp3" selected>mp3</option>
+            <option value="wav">wav</option>
+            <option value="opus">opus (ogg)</option>
+            <option value="aac">aac</option>
+            <option value="flac">flac</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="label" for="targetLang">Output language</label><br/>
+          <select id="targetLang" class="select" title="Override output language">
+            <option value="" selected>Auto (detect from your speech)</option>
+            <option value="same">Same as input</option>
+            <optgroup label="Common Indian languages">
+              <option value="hi">Hindi (hi)</option>
+              <option value="bn">Bengali/Bangla (bn)</option>
+              <option value="gu">Gujarati (gu)</option>
+              <option value="mr">Marathi (mr)</option>
+              <option value="ta">Tamil (ta)</option>
+              <option value="te">Telugu (te)</option>
+              <option value="kn">Kannada (kn)</option>
+              <option value="ml">Malayalam (ml)</option>
+              <option value="pa">Punjabi/Gurmukhi (pa)</option>
+              <option value="or">Odia/Oriya (or)</option>
+              <option value="as">Assamese (as)</option>
+              <option value="ur">Urdu (ur)</option>
+            </optgroup>
+            <optgroup label="Other">
+              <option value="en">English (en)</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <span id="status" class="pill">Idle</span>
+      </div>
+    </section>
+
+    <section class="split">
+      <div class="panel">
+        <div class="row" style="justify-content:space-between; align-items:center">
+          <div class="label">Assistant Reply (text)</div>
+          <div class="badges">
+            <span class="badge" id="srcBadge" title="Detected input language">Source: —</span>
+            <span class="badge" id="tgtBadge" title="Chosen output language">Target: —</span>
+          </div>
+        </div>
+        <div id="reply" class="textout"></div>
+      </div>
+      <div class="panel">
+        <div class="label">Assistant Reply (audio)</div>
+        <audio id="player" preload="auto" controls></audio>
+        <div class="row" style="margin-top:10px">
+          <button id="downloadBtn" class="btn" disabled>⬇️ Download Audio</button>
+          <button id="copyBtn" class="btn" disabled>📋 Copy Reply</button>
+        </div>
+      </div>
+    </section>
+
+    <footer>© Bhasha — Multilingual Voice AI</footer>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    const API_BASE = (window.API_BASE || "").replace(/\/$/, "");
+    const recBtn = document.getElementById('recBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const statusEl = document.getElementById('status');
+    const voice = document.getElementById('voice');
+    const format = document.getElementById('format');
+    const targetLang = document.getElementById('targetLang');
+    const reply = document.getElementById('reply');
+    const player = document.getElementById('player');
+    const srcBadge = document.getElementById('srcBadge');
+    const tgtBadge = document.getElementById('tgtBadge');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const copyBtn = document.getElementById('copyBtn');
+    const toast = document.getElementById('toast');
+
+    let mediaRecorder, chunks = [], recording = false, busy = false, lastBlob = null, lastText = "";
+
+    function setStatus(t){ statusEl.textContent = t; }
+    function showToast(text){
+      toast.textContent = text; toast.classList.add('show');
+      setTimeout(()=>toast.classList.remove('show'), 2200);
+    }
+    function setBadges(src, tgt){
+      srcBadge.textContent = `Source: ${src || '—'}`;
+      tgtBadge.textContent = `Target: ${tgt || '—'}`;
+    }
+    function setReply(text){
+      // Use textContent so we never interpret markup; keeps Unicode safe.
+      reply.textContent = text || '';
+      lastText = text || '';
+      copyBtn.disabled = !lastText;
+    }
+    function setAudio(blob, filename){
+      lastBlob = blob || null;
+      player.src = blob ? URL.createObjectURL(blob) : "";
+      downloadBtn.disabled = !blob;
+      if (blob) {
+        downloadBtn.onclick = () => {
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = filename || 'reply.' + (format.value || 'mp3');
+          document.body.appendChild(a); a.click(); a.remove();
+        };
+      } else {
+        downloadBtn.onclick = null;
+      }
+    }
+
+    // Health ping (helpful during local dev)
+    (async () => {
+      try {
+        const r = await fetch(API_BASE + '/health');
+        const j = await r.json().catch(()=> ({}));
+        if (!j.has_api_key) showToast('⚠️ Backend has no OPENAI_API_KEY');
+      } catch {
+        showToast('⚠️ Backend unreachable');
+      }
+    })();
+
+    // Recording
+    recBtn.onclick = async () => {
+      if (recording || busy) return;
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+          ? 'audio/webm;codecs=opus' : 'audio/webm';
+        mediaRecorder = new MediaRecorder(stream, { mimeType: mime, audioBitsPerSecond: 128000 });
+        chunks = [];
+        mediaRecorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+        mediaRecorder.onstop = async () => {
+          const blob = new Blob(chunks, { type: mediaRecorder.mimeType });
+          await sendAudio(blob);
+        };
+        mediaRecorder.start();
+        recording = true;
+        recBtn.disabled = true; stopBtn.disabled = false; setStatus('Recording…');
+      } catch (e) {
+        console.error(e); setStatus('Idle'); showToast('🎙️ Microphone permission denied');
+      }
+    };
+
+    stopBtn.onclick = () => {
+      if (!recording) return;
+      mediaRecorder.stop();
+      recording = false;
+      recBtn.disabled = false; stopBtn.disabled = true; setStatus('Processing…');
+    };
+
+    // Core call: Speech→Speech
+    async function sendAudio(blob){
+      if (busy) { showToast('Still processing…'); return; }
+      busy = true; setReply(''); setAudio(null); setBadges('—','—');
+
+      const qs = new URLSearchParams({
+        voice: voice.value || 'alloy',
+        format: format.value || 'mp3'
+      });
+      const tl = (targetLang.value || "").trim();
+      if (tl) qs.set("target_lang", tl);  // wire target_lang override if chosen
+
+      const url = API_BASE + '/v1/s2s?' + qs.toString();
+
+      const fd = new FormData();
+      fd.append('file', blob, 'audio.webm');
+
+      try {
+        const resp = await fetch(url, { method:'POST', body: fd });
+        if (!resp.ok) {
+          const t = await resp.text().catch(()=> '');
+          throw new Error('HTTP ' + resp.status + ': ' + (t || resp.statusText));
+        }
+
+        // Decode ONLY the Base64 header (ASCII-safe), so Indic scripts render properly.
+        let rx = '';
+        const b64 = resp.headers.get('x-reply-text-b64');
+        if (b64) { try { rx = atob(b64); } catch {} }
+
+        const src = resp.headers.get('x-source-lang') || '';
+        const tgt = resp.headers.get('x-target-lang') || '';
+        setReply(rx); setBadges(src, tgt);
+
+        const audioBlob = await resp.blob();
+        setAudio(audioBlob, `reply.${(format.value || 'mp3')}`);
+        player.play().catch(()=>{});
+        setStatus('Done');
+      } catch (e) {
+        console.error(e);
+        setReply('Error: ' + e.message);
+        showToast('Request failed');
+        setStatus('Error');
+      } finally {
+        busy = false;
+      }
+    }
+
+    copyBtn.onclick = async () => {
+      if (!lastText) return;
+      try { await navigator.clipboard.writeText(lastText); showToast('Copied reply'); }
+      catch { showToast('Copy failed'); }
+    };
+  </script>
+</body>
+</html>

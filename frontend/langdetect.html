@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Bhasha — Language Detector</title>
+  <script>
+    window.API_BASE = (window.API_BASE || "http://127.0.0.1:8000").replace(/\/$/, "");
+  </script>
+  <style>
+    body{font-family:sans-serif;background:#f7f8fb;margin:0;padding:20px}
+    .card{max-width:700px;margin:auto;background:#fff;padding:20px;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,.1)}
+    h1{text-align:center}
+    textarea,input,select,button{width:100%;margin-top:10px;padding:10px;font-size:1rem;border-radius:6px;border:1px solid #ccc}
+    button{background:#2563eb;color:#fff;border:none;cursor:pointer}
+    button:disabled{opacity:.6;cursor:not-allowed}
+    .result{margin-top:15px;padding:12px;background:#eef6ff;border-radius:8px;white-space:pre-wrap}
+    .pill{display:inline-block;margin-top:6px;padding:4px 8px;font-size:.85rem;background:#eee;border-radius:999px}
+    .translate{margin-top:15px}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Bhasha — Language Detector</h1>
+    <p>Detect language from text or speech, then translate if you wish.</p>
+
+    <!-- Text -->
+    <h3>Detect from Text</h3>
+    <textarea id="text" placeholder="Type or paste text..."></textarea>
+    <button id="detectTextBtn">🧭 Detect Language</button>
+    <div id="textResult" class="result" hidden></div>
+    <div class="translate" id="textTranslateSection" hidden>
+      <label>Translate detected text to:</label>
+      <select id="targetLang">
+        <option value="en">English</option>
+        <option value="hi">Hindi</option>
+        <option value="gu">Gujarati</option>
+        <option value="fr">French</option>
+        <option value="es">Spanish</option>
+        <option value="de">German</option>
+        <option value="zh">Chinese</option>
+        <option value="ar">Arabic</option>
+      </select>
+      <button id="translateBtn">🔁 Translate</button>
+      <div id="translateOut" class="result" hidden></div>
+    </div>
+    <span id="statusText" class="pill">Idle</span>
+
+    <!-- Audio -->
+    <h3>Detect from Audio</h3>
+    <button id="recBtn">🎙️ Start Recording</button>
+    <button id="stopBtn" disabled>⏹ Stop</button>
+    <audio id="player" controls style="margin-top:10px;width:100%"></audio>
+    <div id="audioResult" class="result" hidden></div>
+    <span id="statusAudio" class="pill">Idle</span>
+  </div>
+
+<script>
+(() => {
+  const API_BASE = window.API_BASE;
+
+  const textEl = document.getElementById("text");
+  const detectTextBtn = document.getElementById("detectTextBtn");
+  const textResult = document.getElementById("textResult");
+  const statusText = document.getElementById("statusText");
+
+  const textTranslateSection = document.getElementById("textTranslateSection");
+  const targetLang = document.getElementById("targetLang");
+  const translateBtn = document.getElementById("translateBtn");
+  const translateOut = document.getElementById("translateOut");
+
+  const recBtn = document.getElementById("recBtn");
+  const stopBtn = document.getElementById("stopBtn");
+  const statusAudio = document.getElementById("statusAudio");
+  const audioResult = document.getElementById("audioResult");
+  const player = document.getElementById("player");
+
+  let mediaRecorder = null, chunks = [], recording = false, busy = false;
+  let lastDetectedText = "";
+
+  const LANG_NAMES = { en:"English", fr:"French", hi:"Hindi", gu:"Gujarati", es:"Spanish", de:"German", zh:"Chinese", ar:"Arabic" };
+  const nameOf = (c) => LANG_NAMES[c] || c || "—";
+
+  // --- Detect from TEXT ---
+  detectTextBtn.onclick = async () => {
+    const content = (textEl.value || "").trim();
+    if (!content) { textResult.hidden=false; textResult.textContent="Please type something."; return; }
+    if (busy) return;
+    busy = true; statusText.textContent="Detecting…"; textResult.hidden=true;
+
+    try{
+      const fd = new FormData();
+      fd.append("text", content);
+      const resp = await fetch(API_BASE + "/v1/lang-detect", { method:"POST", body:fd });
+      if(!resp.ok) throw new Error("HTTP " + resp.status);
+      const data = await resp.json();
+      const code = data?.best?.code_base || "";
+      const name = nameOf(code);
+
+      lastDetectedText = data.input || content;
+
+      textResult.hidden=false;
+      textResult.textContent = `Language detected is "${name}"`;
+      textTranslateSection.hidden=false;
+      statusText.textContent="Done";
+    }catch(e){
+      console.error(e);
+      statusText.textContent="Error";
+      textResult.hidden=false;
+      textResult.textContent="❌ Detection failed.";
+    }finally{ busy=false; }
+  };
+
+  // --- Translate ---
+  translateBtn.onclick = async () => {
+    if (!lastDetectedText) { translateOut.hidden=false; translateOut.textContent="Nothing to translate yet."; return; }
+    translateOut.hidden=true; translateOut.textContent=""; statusText.textContent="Translating…";
+    try{
+      const resp = await fetch(API_BASE + "/v1/translate", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ text:lastDetectedText, target_lang:targetLang.value })
+      });
+      if(!resp.ok) throw new Error("HTTP " + resp.status);
+      const data = await resp.json();
+      translateOut.hidden=false;
+      translateOut.textContent = `Translated (${nameOf(targetLang.value)}):\n\n${data.translated}`;
+      statusText.textContent="Done";
+    }catch(e){
+      console.error(e);
+      translateOut.hidden=false;
+      translateOut.textContent="❌ Translation failed.";
+      statusText.textContent="Error";
+    }
+  };
+
+  // --- Detect from AUDIO ---
+  recBtn.onclick = async () => {
+    if(recording||busy) return;
+    try{
+      const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+      mediaRecorder = new MediaRecorder(stream);
+      chunks = [];
+      mediaRecorder.ondataavailable = e => { if(e.data.size>0) chunks.push(e.data); };
+      mediaRecorder.onstop = async () => {
+        const blob = new Blob(chunks, {type:mediaRecorder.mimeType});
+        player.src = URL.createObjectURL(blob);
+        await detectFromAudio(blob);
+        stream.getTracks().forEach(t=>t.stop());
+      };
+      mediaRecorder.start();
+      recording=true; recBtn.disabled=true; stopBtn.disabled=false;
+      statusAudio.textContent="Recording…";
+    }catch(e){console.error(e);}
+  };
+  stopBtn.onclick = () => {
+    if(!recording) return;
+    mediaRecorder.stop();
+    recording=false; recBtn.disabled=false; stopBtn.disabled=true;
+    statusAudio.textContent="Processing…";
+  };
+
+  async function detectFromAudio(blob){
+    if(busy) return;
+    busy=true; statusAudio.textContent="Detecting…"; audioResult.hidden=true;
+    try{
+      const fd = new FormData();
+      fd.append("file", blob, "audio.webm");
+      const resp = await fetch(API_BASE + "/v1/lang-detect", {method:"POST", body:fd});
+      if(!resp.ok) throw new Error("HTTP " + resp.status);
+      const data = await resp.json();
+      const code = data?.best?.code_base || "";
+      const name = nameOf(code);
+      lastDetectedText = data.input || "";
+      audioResult.hidden=false;
+      audioResult.textContent = `Language detected is "${name}"`;
+      statusAudio.textContent="Done";
+    }catch(e){
+      console.error(e);
+      audioResult.hidden=false;
+      audioResult.textContent="❌ Detection failed.";
+      statusAudio.textContent="Error";
+    }finally{busy=false;}
+  }
+})();
+</script>
+</body>
+</html>

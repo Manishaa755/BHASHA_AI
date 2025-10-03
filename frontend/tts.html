@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Bhasha — Text → Speech</title>
+    <script>window.API_BASE = "http://127.0.0.1:8000";</script>
+
+    <!-- Indic font support -->
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Noto+Sans:wght@400;600&family=Noto+Sans+Devanagari:wght@400;600&family=Noto+Sans+Gujarati:wght@400;600&family=Noto+Sans+Bengali:wght@400;600&family=Noto+Sans+Tamil:wght@400;600&family=Noto+Sans+Telugu:wght@400;600&family=Noto+Sans+Malayalam:wght@400;600&family=Noto+Sans+Gurmukhi:wght@400;600&family=Noto+Sans+Kannada:wght@400;600&family=Noto+Sans+Oriya:wght@400;600&family=Noto+Sans+Assamese:wght@400;600&display=swap"
+      rel="stylesheet">
+
+    <link rel="icon" href="data:,">
+    <style>
+    :root{
+      color-scheme:dark;
+      --bg:#0a0b0f; --card:#0f1320; --muted:#9aa4b2; --text:#eef2f7;
+      --line:rgba(255,255,255,.08); --brand1:#2563eb; --brand2:#7c3aed;
+      --danger:#ef4444; --radius:16px; --shadow:0 20px 70px rgba(0,0,0,.45);
+      --glass:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background:
+        radial-gradient(1200px 600px at 20% -10%, rgba(109,94,252,.18), transparent 60%),
+        radial-gradient(1000px 600px at 110% 10%, rgba(0,231,240,.12), transparent 50%),
+        var(--bg);
+      color:var(--text);
+      font-family: Inter, "Noto Sans", "Noto Sans Devanagari", "Noto Sans Gujarati", "Noto Sans Bengali",
+                   "Noto Sans Tamil", "Noto Sans Telugu", "Noto Sans Malayalam", "Noto Sans Gurmukhi",
+                   "Noto Sans Kannada", "Noto Sans Oriya", "Noto Sans Assamese",
+                   ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    }
+    a{color:inherit; text-decoration:none}
+    .container{max-width:1120px; margin:0 auto; padding:24px}
+    .nav{display:flex; align-items:center; justify-content:space-between; gap:16px; padding:10px 0 8px;}
+    .logo{display:flex; align-items:center; gap:10px; font-weight:700}
+    .logo-badge{width:34px; height:34px; border-radius:10px; background: conic-gradient(from 180deg at 50% 50%, var(--brand1), var(--brand2)); display:grid; place-items:center; color:white; font-size:18px; box-shadow: var(--shadow);}
+    .navlinks{display:flex; gap:12px; align-items:center; opacity:.92}
+    .navlinks a{padding:8px 12px; border-radius:10px; border:1px solid transparent}
+    .navlinks a.active{border-color: var(--line); background: rgba(255,255,255,.05)}
+
+    .hero{margin-top:10px; padding:28px; border-radius:var(--radius); background: var(--glass); border:1px solid var(--line); box-shadow: var(--shadow);}
+    .hero h1{margin:6px 0 8px; font-size:28px; letter-spacing:.3px}
+    .hero p{margin:0; color:var(--muted)}
+
+    .panel{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow: var(--shadow); padding:20px; margin-top:16px}
+    .row{display:flex; gap:12px; flex-wrap:wrap; align-items:end}
+    .input, select, textarea{background:#12182a; color:var(--text); border:1px solid var(--line); border-radius:12px; padding:10px; font-family:inherit; font-size:14px}
+    textarea{width:100%; resize:vertical}
+    .btn{border:none; color:white; font-weight:600; cursor:pointer; border-radius:14px; padding:12px 16px; letter-spacing:.2px; background: linear-gradient(135deg, var(--brand1), var(--brand2));}
+    .btn:disabled{opacity:.6; cursor:not-allowed}
+    .textout{background:#0d1222; border:1px solid var(--line); border-radius:12px; padding:12px; color:#cfe4ff; font-size:15px; white-space:pre-wrap; margin-top:14px}
+    audio{width:100%; margin-top:14px}
+    .label{color:var(--muted); font-size:13px}
+    footer{opacity:.7; font-size:12px; text-align:center; margin:24px 0 6px}
+  </style>
+  </head>
+  <body>
+    <div class="container">
+      <nav class="nav">
+        <div class="logo"><div class="logo-badge">भ</div><div>Bhasha</div></div>
+        <div class="navlinks">
+          <a href="/static/index.html">Home</a>
+          <a href="/static/stt.html">STT</a>
+          <a class="active" href="/static/tts.html">TTS</a>
+          <a href="/static/sts.html">Speech↔Speech</a>
+        </div>
+      </nav>
+
+      <section class="hero">
+        <h1>Text → Speech</h1>
+        <p>Type your query in any language. The assistant replies in that
+          language (or your requested target language) and speaks it aloud.</p>
+      </section>
+
+      <section class="panel">
+        <div class="row">
+          <div style="flex:1 1 420px">
+            <label class="label">Your Prompt</label>
+            <textarea id="text" rows="5"
+              placeholder="उदाहरण: कृपया जलवायु परिवर्तन समझाएँ / Explain crop rotation in Marathi"></textarea>
+          </div>
+          <div>
+            <label class="label">Voice</label><br />
+            <select id="voice" class="input">
+              <option value="alloy" selected>alloy</option>
+              <option value="verse">verse</option>
+              <option value="coral">coral</option>
+              <option value="sage">sage</option>
+            </select>
+          </div>
+          <div>
+            <label class="label">Format</label><br />
+            <select id="format" class="input">
+              <option value="mp3" selected>mp3</option>
+              <option value="wav">wav</option>
+              <option value="opus">opus (ogg)</option>
+              <option value="aac">aac</option>
+              <option value="flac">flac</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:14px">
+          <button id="speakBtn" class="btn">🔊 Generate & Speak</button>
+          <span id="status" class="label">Idle</span>
+        </div>
+
+        <div id="reply" class="textout" hidden></div>
+        <audio id="player" controls></audio>
+      </section>
+
+      <footer>© Bhasha — Multilingual Voice AI</footer>
+    </div>
+
+    <script>
+    const API_BASE = (window.API_BASE || "").replace(/\/$/, "");
+    const speakBtn = document.getElementById('speakBtn');
+    const text = document.getElementById('text');
+    const voice = document.getElementById('voice');
+    const format = document.getElementById('format');
+    const statusEl = document.getElementById('status');
+    const reply = document.getElementById('reply');
+    const player = document.getElementById('player');
+
+    function setStatus(t){ statusEl.textContent = t; }
+    function setReply(t){ reply.textContent = t || ''; reply.hidden = !t; }
+
+    speakBtn.onclick = async () => {
+      const userText = (text.value || "").trim();
+      if (!userText) { setReply("⚠️ Please type something."); return; }
+      setStatus("Generating…"); setReply(""); player.removeAttribute('src'); player.load();
+
+      try {
+        const resp = await fetch(API_BASE + "/v1/tts-speak", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: userText,
+            voice: voice.value || "alloy",
+            format: format.value || "mp3"
+          })
+        });
+        if (!resp.ok) {
+          const t = await resp.text().catch(()=> "");
+          throw new Error("HTTP " + resp.status + ": " + (t || resp.statusText));
+        }
+
+        let rx = '';
+        const b64 = resp.headers.get('x-reply-text-b64');
+        if (b64) { try { rx = atob(b64); } catch {} }
+        setReply(rx);
+
+        const audioBlob = await resp.blob();
+        player.src = URL.createObjectURL(audioBlob);
+        player.play().catch(()=>{});
+        setStatus("Done");
+      } catch (e) {
+        console.error(e);
+        setReply("Error: " + e.message);
+        setStatus("Error");
+      }
+    };
+  </script>
+  </body>
+</html>

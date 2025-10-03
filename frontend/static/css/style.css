@@ -1,0 +1,8 @@
+body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f7f7f7; }
+.nav { background: #1b2b34; padding: 12px; }
+.nav a { color: #fff; margin-right: 12px; text-decoration: none; }
+.nav a.active { font-weight: bold; }
+.container { padding: 24px; }
+#controls { margin-bottom: 12px; }
+button { padding: 10px 16px; margin-right: 8px; border-radius: 6px; border: 1px solid #bbb; cursor: pointer; }
+pre { background: #fff; padding: 12px; border-radius: 6px; min-height: 80px; }

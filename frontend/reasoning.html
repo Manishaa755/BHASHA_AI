@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>LLM Document Reasoning</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+    :root{
+      color-scheme: light dark;
+      --bg: #f7f7f7;
+      --card: #ffffff;
+      --surface: #f3f4f6;
+      --text: #0f172a;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --accent: #2563eb;
+      --accent-600: #1d4ed8;
+      --ok: #065f46;
+      --err: #b91c1c;
+      --mono: #0f172a;
+
+      --radius: 14px;
+      --shadow: 0 10px 30px rgba(0,0,0,.10);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root{
+        --bg: #0b1020;
+        --card: #12172a;
+        --surface: #0f1530;
+        --text: #e5e7eb;
+        --muted: #9aa3b2;
+        --border: #242a3c;
+        --accent: #60a5fa;
+        --accent-600: #3b82f6;
+        --ok: #34d399;
+        --err: #f87171;
+        --mono: #e5e7eb;
+        --shadow: 0 10px 30px rgba(0,0,0,.35);
+      }
+    }
+    *{ box-sizing: border-box }
+    html,body{ height:100% }
+    body{
+      margin:0; background:var(--bg); color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans", "Helvetica Neue", sans-serif;
+      line-height: 1.45;
+    }
+    a{ color: var(--accent); text-decoration: none }
+    a:hover{ text-decoration: underline }
+
+    .container{ max-width: 980px; margin: 40px auto; padding: 0 18px }
+    .card{ background: var(--card); border:1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden }
+    .header{
+      display:flex; align-items:center; justify-content:space-between;
+      padding: 18px 22px; border-bottom:1px solid var(--border);
+      background: linear-gradient(180deg, var(--surface), transparent);
+    }
+    .title{
+      display:flex; align-items:center; gap:12px; font-size: 20px; font-weight: 800;
+    }
+    .title .logo{
+      width:34px; height:34px; display:grid; place-items:center; border-radius:9px;
+      background: radial-gradient(80% 80% at 50% 20%, var(--accent), transparent), var(--surface);
+      color:white; font-size: 18px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+    }
+    .toolbar{ display:flex; gap:10px; align-items:center }
+
+    .btn{
+      background: var(--accent); color:white; border:none; border-radius: 10px;
+      padding: 10px 14px; font-weight: 700; cursor: pointer;
+      transition: transform .04s ease, opacity .15s ease, background .15s ease;
+    }
+    .btn.secondary{
+      background: transparent; color: var(--text);
+      border:1px solid var(--border);
+    }
+    .btn:active{ transform: translateY(1px) }
+    .btn[disabled]{ opacity:.6; cursor:not-allowed }
+    .switch{
+      display:inline-flex; align-items:center; gap:10px; font-weight:600; color:var(--muted)
+    }
+    .switch input{ display:none }
+    .toggle{
+      width:48px; height:28px; border-radius:999px; background: var(--surface);
+      border:1px solid var(--border); position:relative; transition: background .2s ease;
+    }
+    .toggle::after{
+      content:""; position:absolute; top:3px; left:3px; width:22px; height:22px; border-radius:50%;
+      background:white; box-shadow:0 2px 6px rgba(0,0,0,.2); transition: left .2s ease, background .2s ease;
+    }
+    .switch input:checked + .toggle{ background: var(--accent-600) }
+    .switch input:checked + .toggle::after{ left:23px; background: #f8fafc }
+
+    .body{ padding: 22px }
+    .grid{ display:grid; gap:16px }
+    @media (min-width: 840px){ .grid-2{ grid-template-columns:1fr 1fr } }
+
+    label{ font-weight:700; display:block; margin-bottom:8px }
+    .hint{ color:var(--muted); margin:6px 0 14px }
+
+    input[type="file"], input[type="text"], input[type="search"], select, textarea{
+      width:100%; padding:12px 14px; border:1px solid var(--border); border-radius:12px; background:var(--card); outline:none;
+      color:var(--text);
+    }
+    textarea{ min-height:180px; resize:vertical; font-size: 15px }
+
+    .drop{
+      border:2px dashed var(--border); border-radius:12px; padding:20px; background: var(--surface);
+      display:flex; align-items:center; justify-content:center; text-align:center; color: var(--muted);
+      transition: border-color .15s ease, background .15s ease;
+    }
+    .drop.dragover{
+      border-color: var(--accent); background: rgba(37, 99, 235, .08);
+    }
+    .file-pill{
+      display:inline-flex; align-items:center; gap:10px; padding:8px 12px;
+      border:1px solid var(--border); border-radius:999px; background: var(--surface); color:var(--text);
+      font-size: 13px; margin-top:8px;
+    }
+    .file-pill .x{
+      background: transparent; border:none; color: var(--muted); font-weight: 900; cursor: pointer;
+    }
+
+    .actions{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-top: 6px }
+    .spinner{ display:none; gap:8px; align-items:center; color:var(--muted) }
+    .dot{ width:7px; height:7px; border-radius:50%; background:var(--accent); animation:b 1.2s infinite ease-in-out }
+    .dot:nth-child(2){ animation-delay:.15s } .dot:nth-child(3){ animation-delay:.3s }
+    @keyframes b{0%,80%,100%{transform:scale(0)}40%{transform:scale(1)}}
+
+    .response{
+      margin-top:20px; padding:18px; background: var(--surface);
+      border:1px solid var(--border); border-radius:12px; white-space:pre-wrap;
+      position:relative;
+    }
+    .response .header{
+      border:none; background:transparent; padding:0 0 10px 0; margin:0 0 10px 0;
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .tags{ display:flex; gap:8px; flex-wrap:wrap }
+    .tag{
+      font-size:12px; padding:6px 10px; border-radius:999px; background: rgba(99,102,241,.12);
+      border:1px solid var(--border); color: var(--text)
+    }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; color: var(--mono) }
+    .ok{ color: var(--ok) }
+    .err{ color: var(--err) }
+
+    .examples{ margin-top:10px; display:flex; gap:10px; flex-wrap:wrap }
+    .chip{
+      border:1px solid var(--border); color: var(--muted); background: var(--surface);
+      border-radius:999px; font-size:13px; padding:8px 10px; cursor:pointer;
+    }
+    .chip:hover{ color: var(--text) }
+
+    .footer{ padding: 12px 22px; border-top:1px solid var(--border); color:var(--muted); font-size:.92rem; display:flex; justify-content:space-between; align-items:center}
+    .small{ font-size:.92rem }
+  </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="card" role="region" aria-label="LLM Document Reasoning">
+        <div class="header">
+          <div class="title">
+            <div class="logo" aria-hidden="true">AI</div>
+            <div>LLM Document Reasoning</div>
+          </div>
+          <div class="toolbar">
+            <label class="switch"
+              title="Toggle dark mode (prefers-color-scheme is respected)">
+              <input id="themeToggle" type="checkbox" />
+              <span class="toggle" aria-hidden="true"></span>
+              <span class="small">Dark</span>
+            </label>
+            <a class="btn secondary" href="/static/langdetect.html">Language
+              Tools</a>
+          </div>
+        </div>
+
+        <div class="body">
+          <p class="hint">Upload a file <em>or</em> paste text. Choose a task
+            (Auto / Summarize / Q&amp;A). Replies default to your detected
+            language; set a target language to override.</p>
+
+          <form id="reasonForm" class="grid" autocomplete="off" novalidate>
+            <div>
+              <label>Upload document (optional)</label>
+
+              <!-- Drag & Drop Zone -->
+              <div id="drop" class="drop" tabindex="0" role="button"
+                aria-label="Drop file here or click to select">
+                Drop file here or click to browse
+              </div>
+              <input id="fileInput" name="file" type="file"
+                accept=".pdf,.docx,.pptx,.xlsx,.xlsm,.txt,.md,.csv,.json,.rtf,.html,.htm,.log"
+                style="display:none" />
+              <div id="fileInfo" class="file-pill" style="display:none">
+                <span id="fileName">file</span>
+                <span id="fileMeta" class="small muted">—</span>
+                <button class="x" type="button" title="Remove file"
+                  aria-label="Remove file">&times;</button>
+              </div>
+              <div class="hint small">Supported: PDF, DOCX, PPTX, XLSX/XLSM,
+                TXT/MD/CSV/JSON/RTF/HTML/LOG</div>
+            </div>
+
+            <div>
+              <label for="docText">Paste text (optional)</label>
+              <textarea id="docText" name="text"
+                placeholder="Paste text here if you’re not uploading a file…"></textarea>
+              <div class="hint small">If both file and text are provided, the
+                file is used.</div>
+            </div>
+
+            <div class="grid grid-2">
+              <div>
+                <label for="task">Task</label>
+                <select id="task" name="task">
+                  <option value="auto" selected>Auto (detect intent)</option>
+                  <option value="summarize">Summarize</option>
+                  <option value="qa">Q&amp;A (answer a question)</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="targetLang">Target language (optional)</label>
+                <input id="targetLang" name="target_lang" type="search"
+                  placeholder="auto (default) or e.g., en, hi, fr…" />
+                <div class="hint small">Leave empty or “auto” to reply in the
+                  detected language. Use ISO code to force a language (e.g., en,
+                  fr, hi).</div>
+              </div>
+            </div>
+
+            <div>
+              <label for="question">Question (only for Q&amp;A)</label>
+              <input id="question" name="question" type="text"
+                placeholder="e.g., What are the main risks?" />
+              <div class="hint small">If you type “summarize this”, it will
+                summarize even if task = Q&amp;A.</div>
+            </div>
+
+            <div class="examples">
+              <button type="button" class="chip" data-fill="summarize">Example:
+                Summarize this</button>
+              <button type="button" class="chip" data-fill="qa">Example: What
+                are the key findings?</button>
+              <button type="button" class="chip" data-fill="lang">Example:
+                Target language = en</button>
+            </div>
+
+            <div class="actions">
+              <button class="btn" id="submitBtn" type="submit">Analyze</button>
+              <div id="spinner" class="spinner" aria-live="polite">
+                <span class="dot"></span><span class="dot"></span><span
+                  class="dot"></span>
+                <span>Working…</span>
+              </div>
+            </div>
+          </form>
+
+          <div id="result" class="response" style="display:none;">
+            <div class="header">
+              <div class="tags">
+                <span class="tag" id="tagTask">Task: —</span>
+                <span class="tag" id="tagLang">Target: —</span>
+              </div>
+              <button id="copyBtn" class="btn secondary small" type="button"
+                title="Copy result to clipboard">Copy</button>
+            </div>
+            <div id="resultText" class="mono"></div>
+          </div>
+        </div>
+
+        <div class="footer">
+          <span class="small">Tip: For quick summaries without a file, paste
+            text and choose <strong>Summarize</strong>.</span>
+          <span class="small">Serving: <code>/v1/reason-doc</code></span>
+        </div>
+      </div>
+    </div>
+
+    <script>
+    // --- DOM ---
+    const form       = document.getElementById("reasonForm");
+    const dropZone   = document.getElementById("drop");
+    const fileInput  = document.getElementById("fileInput");
+    const fileInfo   = document.getElementById("fileInfo");
+    const fileNameEl = document.getElementById("fileName");
+    const fileMetaEl = document.getElementById("fileMeta");
+    const removeBtn  = fileInfo.querySelector(".x");
+
+    const docText    = document.getElementById("docText");
+    const taskSel    = document.getElementById("task");
+    const questionEl = document.getElementById("question");
+    const targetEl   = document.getElementById("targetLang");
+
+    const resultWrap = document.getElementById("result");
+    const resultTxt  = document.getElementById("resultText");
+    const tagTask    = document.getElementById("tagTask");
+    const tagLang    = document.getElementById("tagLang");
+    const copyBtn    = document.getElementById("copyBtn");
+
+    const spinnerEl  = document.getElementById("spinner");
+    const submitBtn  = document.getElementById("submitBtn");
+    const themeToggle= document.getElementById("themeToggle");
+
+    // --- Dark mode toggle (overrides system) ---
+    const THEME_KEY = "doc_reason_theme";
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved === "dark") document.documentElement.style.colorScheme = "dark";
+    if (saved === "light") document.documentElement.style.colorScheme = "light";
+    themeToggle.checked = (saved ?? "").toLowerCase() === "dark";
+    themeToggle.addEventListener("change", () => {
+      const mode = themeToggle.checked ? "dark" : "light";
+      document.documentElement.style.colorScheme = mode;
+      localStorage.setItem(THEME_KEY, mode);
+    });
+
+    // --- Drag & Drop Upload ---
+    const openFilePicker = () => fileInput.click();
+    dropZone.addEventListener("click", openFilePicker);
+    dropZone.addEventListener("keypress", (e) => { if (e.key === "Enter" || e.key === " ") openFilePicker(); });
+
+    ["dragenter","dragover"].forEach(evt => dropZone.addEventListener(evt, (e)=> {e.preventDefault(); e.stopPropagation(); dropZone.classList.add("dragover");}));
+    ["dragleave","drop"].forEach(evt => dropZone.addEventListener(evt, (e)=> {e.preventDefault(); e.stopPropagation(); dropZone.classList.remove("dragover");}));
+    dropZone.addEventListener("drop", (e) => {
+      const f = e.dataTransfer.files?.[0];
+      if (f) setFile(f);
+    });
+    fileInput.addEventListener("change", (e) => {
+      const f = e.target.files?.[0];
+      if (f) setFile(f);
+    });
+    removeBtn.addEventListener("click", () => {
+      fileInput.value = "";
+      fileInfo.style.display = "none";
+    });
+    function setFile(f){
+      // Limit ~20 MB client-side (server will enforce anyway)
+      const MAX = 20 * 1024 * 1024;
+      if (f.size > MAX){
+        alert("File too large (max ~20 MB).");
+        return;
+      }
+      fileNameEl.textContent = f.name;
+      fileMetaEl.textContent = `(${prettyBytes(f.size)} · ${f.type || 'unknown'})`;
+      fileInfo.style.display = "inline-flex";
+      // inject into input for form submission
+      const dt = new DataTransfer();
+      dt.items.add(f);
+      fileInput.files = dt.files;
+    }
+    function prettyBytes(n){
+      if (!Number.isFinite(n)) return n;
+      const u = ["B","KB","MB","GB"]; let i=0;
+      while(n>=1024 && i<u.length-1){ n/=1024; i++; }
+      return `${n.toFixed(n<10 && i>0 ? 1 : 0)} ${u[i]}`;
+    }
+
+    // --- Examples ---
+    document.querySelectorAll(".chip").forEach(chip => {
+      chip.addEventListener("click", () => {
+        const mode = chip.dataset.fill;
+        if (mode === "summarize"){
+          taskSel.value = "summarize";
+          questionEl.value = "Summarize this";
+          targetEl.value = "auto";
+        } else if (mode === "qa"){
+          taskSel.value = "qa";
+          questionEl.value = "What are the key findings?";
+          targetEl.value = "auto";
+        } else if (mode === "lang"){
+          targetEl.value = "en";
+        }
+        docText.focus();
+      });
+    });
+
+    // --- Submit ---
+    form.addEventListener("submit", onSubmit);
+
+    async function onSubmit(e){
+      e.preventDefault();
+      showResult(null); // reset
+
+      // Validation: require file or non-empty text
+      if (!fileInput.files[0] && !docText.value.trim()){
+        showError("Please upload a file or paste some text.");
+        return;
+      }
+
+      const fd = new FormData();
+      fd.append("task", (taskSel.value || "auto").trim());
+      fd.append("question", (questionEl.value || "").trim());
+      const tl = (targetEl.value || "auto").trim(); fd.append("target_lang", tl === "" ? "auto" : tl);
+      if (fileInput.files[0]) fd.append("file", fileInput.files[0]);
+      else fd.append("text", (docText.value || "").trim());
+
+      setBusy(true);
+      try{
+        const resp = await fetch("/v1/reason-doc", { method:"POST", body: fd });
+        const data = await resp.json();
+
+        if (!resp.ok){
+          showError(data?.detail || JSON.stringify(data));
+          return;
+        }
+
+        // Render OK
+        const task = data.task || "unknown";
+        const tlang = data.target_lang || "auto";
+        const result = data.result || "(no result)";
+        const question = data.question;
+
+        let headerText = `Task: ${task}`;
+        let bodyText = "";
+        if (task === "qa") {
+          headerText += question ? ` • Q: ${question}` : "";
+          bodyText = result;
+        } else {
+          bodyText = result;
+        }
+        showResult({ task, lang: tlang, body: bodyText });
+      }catch(err){
+        showError(err?.message || String(err));
+      }finally{
+        setBusy(false);
+      }
+    }
+
+    function setBusy(b){
+      submitBtn.disabled = b;
+      spinnerEl.style.display = b ? "flex" : "none";
+    }
+
+    function showResult(payload){
+      if (!payload){
+        resultWrap.style.display = "none";
+        resultTxt.textContent = "";
+        return;
+      }
+      tagTask.textContent = `Task: ${payload.task}`;
+      tagLang.textContent = `Target: ${payload.lang}`;
+      resultTxt.textContent = payload.body;
+      resultWrap.style.display = "block";
+      resultWrap.classList.remove("err");
+    }
+
+    function showError(msg){
+      resultWrap.style.display = "block";
+      tagTask.textContent = "Error";
+      tagLang.textContent = "";
+      resultTxt.textContent = `❌ ${msg}`;
+      resultWrap.classList.add("err");
+    }
+
+    // Copy button
+    copyBtn.addEventListener("click", async () => {
+      try{
+        await navigator.clipboard.writeText(resultTxt.textContent || "");
+        copyBtn.textContent = "Copied!";
+        setTimeout(()=> copyBtn.textContent = "Copy", 900);
+      }catch(_){
+        copyBtn.textContent = "Copy failed";
+        setTimeout(()=> copyBtn.textContent = "Copy", 1200);
+      }
+    });
+  </script>
+  </body>
+</html>
